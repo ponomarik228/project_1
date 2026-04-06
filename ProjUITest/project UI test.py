@@ -1,3 +1,12 @@
+'''
+ПЛАН ТОЛЬКО ДЛЯ ТИХОНА!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+НЕ ЛЕЗЬТЕ, СУКИ!!!!!!!!!!!!!!!!!
+
+1. Адаптировать окно решения, подсказку
+2. Сделать об авторах, доделать подсказку
+3. Сделать "посмотреть решение"
+'''
+
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget,
     QVBoxLayout, QHBoxLayout, QPushButton,
@@ -14,9 +23,9 @@ import os
 from random import randint, random
 
 app = QApplication([])
-QFontDatabase.addApplicationFont("Assets/UI_FONT.otf")
-QFontDatabase.addApplicationFont("Assets/TEXT_FONT.ttf")
-QFontDatabase.addApplicationFont("Assets/SegoePro-Semibold.ttf")
+QFontDatabase.addApplicationFont("ProjUITest/Assets/UI_FONT.otf")
+QFontDatabase.addApplicationFont("ProjUITest/Assets/TEXT_FONT.ttf")
+QFontDatabase.addApplicationFont("ProjUITest/Assets/SegoePro-Semibold.ttf")
 
 # ---------------- РАЗМЕР ЭКРАНА ----------------
 def get_scale(screen_size, base_resolution=(1280, 720)):
@@ -120,7 +129,7 @@ class CornerWidget(QWidget):
 
         # --- ЛОГО ---
         logo = QLabel()
-        pixmap = QPixmap("Assets/logo.png")
+        pixmap = QPixmap("ProjUITest/Assets/logo.png")
 
         size = int(50 * scale)
         logo.setPixmap(
@@ -226,7 +235,7 @@ class MainMenu(QWidget):
 
         # --- Overlay изображение ---
         self.overlay = QLabel(self)
-        self.overlay.setPixmap(QPixmap("Assets/overlay.png"))
+        self.overlay.setPixmap(QPixmap("ProjUITest/Assets/overlay.png"))
         self.overlay.setScaledContents(True)  # растягиваем под размер окна
         self.overlay.setGeometry(0, 0, self.width(), self.height())
         self.overlay.setAttribute(Qt.WA_TransparentForMouseEvents)  # чтобы не блокировало клики
@@ -564,9 +573,11 @@ class input_panel(CastomPanel):
         label_dict = {"P_пл": "Н", "AB": "см", "OA": "см", "OC": "см", "P": "Н", }
 
         for key in label_dict:
-            layout.addWidget(Slider(label_dict[key], key))
+            slider = Slider(label_dict[key], key)  # создаём
+            self.sliders[key] = slider             # сохраняем
+            layout.addWidget(slider)
             layout.setSpacing(-20)
-        
+
         layout.setSpacing(35)
 
         btn_row = QHBoxLayout()
@@ -584,6 +595,7 @@ class input_panel(CastomPanel):
         )
 
         self.random_btn = QPushButton("СЛУЧАЙНЫЕ ЗН-Я")
+        self.random_btn.clicked.connect(lambda: self.set_value("P_пл", 1)) # написать ф-ю рандомизации зн-й, запихнуть сюда
         self.random_btn.setObjectName("mainButton")
         generate_adaptive_qss(
             self.random_btn,
@@ -604,6 +616,15 @@ class input_panel(CastomPanel):
         btn_row.addWidget(self.random_btn)
 
         layout.addLayout(btn_row)
+    
+    #получить значение с слайдера
+    def get_value(self, key):
+        return self.sliders[key].slider.value()
+        
+    #изменить значение слайдера
+    def set_value(self, key, value):
+        self.sliders[key].slider.setValue(value)
+        #self.sliders[str(value)].input.setText(str(value))
 
 # ---------------- ПОЛЕ ВВОДА ----------------
 class answer_panel(QWidget):
@@ -691,7 +712,9 @@ class result_panel(CastomPanel):
         label_dict = {"X_0": "Н", "Y_0": "H", "Y_C": "H"}
 
         for key in label_dict:
-            values_layout.addWidget(answer_panel(label_dict[key], key))
+            value_ans = answer_panel(label_dict[key], key)  # создаём
+            self.values[key] = value_ans             # сохраняем
+            values_layout.addWidget(value_ans)
             values_layout.setSpacing(-5)
 
         layout.addLayout(values_layout)
@@ -700,6 +723,7 @@ class result_panel(CastomPanel):
         btn_row = QHBoxLayout()
 
         self.reset_btn = QPushButton("СБРОСИТЬ")
+        self.reset_btn.clicked.connect(lambda: self.set_value_ans('X_0', 0)) # ну почти, только для троих сделать, желательно отдельной ф-й
         self.reset_btn.setObjectName("secondaryButton")
         generate_adaptive_qss(
             self.reset_btn,
@@ -712,6 +736,7 @@ class result_panel(CastomPanel):
             enlarge_on_hover=True
         )
         self.check_btn = QPushButton("ПРОВЕРИТЬ ОТВЕТ")
+        self.check_btn.clicked.connect(lambda: print(self.get_value_ans('X_0')))  # просто для примера, переделать
         self.check_btn.setObjectName("mainButton")
         generate_adaptive_qss(
             self.check_btn,
@@ -733,6 +758,14 @@ class result_panel(CastomPanel):
         btn_row.addWidget(self.check_btn)
 
         layout.addLayout(btn_row)
+
+    #получить значение с поля ввода
+    def get_value_ans(self, key):
+        return float(self.values[key].input.text())
+        
+        #изменить значение поля ввода
+    def set_value_ans(self, key, value):
+        self.values[key].input.setText(str(value))
 
 # ---------------- ОСНОВНОЙ ЭКРАН ----------------
 class SolverPage(QWidget):
@@ -827,7 +860,7 @@ class SolverPage(QWidget):
 
         # --- Overlay изображение ---
         self.overlay = QLabel(self)
-        self.overlay.setPixmap(QPixmap("Assets/overlay.png"))
+        self.overlay.setPixmap(QPixmap("ProjUITest/Assets/overlay.png"))
         self.overlay.setScaledContents(True)  # растягиваем под размер окна
         self.overlay.setGeometry(0, 0, self.width(), self.height())
         self.overlay.setAttribute(Qt.WA_TransparentForMouseEvents)  # чтобы не блокировало клики
@@ -864,7 +897,7 @@ class App(QMainWindow):
 
 STYLE = """
 QMainWindow {
-    border-image: url("Assets/bg.png") 0 0 0 0 stretch stretch; 
+    border-image: url("ProjUITest/Assets/bg.png") 0 0 0 0 stretch stretch; 
     
 }
 
