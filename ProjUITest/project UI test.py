@@ -2,8 +2,8 @@
 ПЛАН ТОЛЬКО ДЛЯ ТИХОНА!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 НЕ ЛЕЗЬТЕ, СУКИ!!!!!!!!!!!!!!!!!
 
-1. Адаптировать окно решения, подсказку
-2. Сделать об авторах, доделать подсказку
+1. +++
+2. Сделать об авторах, доделать подсказку, адаптировать ее
 3. Сделать "посмотреть решение"
 '''
 
@@ -16,17 +16,18 @@ from PySide6.QtWidgets import (
     QStyleOptionSlider, QMessageBox
 )
 from PySide6.QtCore import Qt, QPropertyAnimation, QSize, QEasingCurve, QTimer, QRectF, QRect, QRegularExpression
-from PySide6.QtGui import QPainter, QFontDatabase, QFont, QPixmap, QColor, QBrush, QPen, QIntValidator, QDoubleValidator, QRegularExpressionValidator
+from PySide6.QtGui import QPainter, QFontDatabase, QFont, QPixmap, QColor, QBrush, QPen, QIntValidator, QDoubleValidator, QRegularExpressionValidator, QTransform
 
 import sys
 import os
 from random import randint, random
+from math import ceil
 
 # ---------------- РАЗМЕР ЭКРАНА ----------------
 def get_scale(screen_size, base_resolution=(1280, 720)):
     scale_w = screen_size.width() / base_resolution[0]
     scale_h = screen_size.height() / base_resolution[1]
-    return int(min(scale_w, scale_h))
+    return min(scale_w, scale_h)
 
 # ---------------- АДАПТИВНЫЕ КНОПКИ ----------------
 def generate_adaptive_qss(button, 
@@ -48,22 +49,22 @@ def generate_adaptive_qss(button,
     scale = get_scale(button.screen().size())
 
     # размеры кнопки
-    w = int(base_size[0] * scale)
-    h = int(base_size[1] * scale)
+    w = ceil(base_size[0] * scale)
+    h = ceil(base_size[1] * scale)
     button.setFixedSize(w, h)
 
     # шрифт
     font = QFont()
-    font.setPointSize(int(base_font * scale))
+    font.setPointSize(ceil(base_font * scale))
     font.setBold(True)
     button.setFont(font)
 
     # padding, border-radius, border-width
-    pad_v = int(base_padding[0] * scale)
-    pad_h = int(base_padding[1] * scale)
-    border_radius = int(base_border_radius * scale)
-    border_width = max(int(base_border_width * scale), 1)
-    hover_border = max(int(border_width * hover_border_multiplier), 1)
+    pad_v = ceil(base_padding[0] * scale)
+    pad_h = ceil(base_padding[1] * scale)
+    border_radius = ceil(base_border_radius * scale)
+    border_width = max(ceil(base_border_width * scale), 1)
+    hover_border = max((border_width * hover_border_multiplier), 1)
 
     # формируем QSS
     qss = f"""
@@ -77,7 +78,7 @@ def generate_adaptive_qss(button,
     # hover эффекты
     hover_styles = ""
     if enlarge_on_hover:
-        hover_styles += f"font-size: {int(base_font * scale * hover_scale)}px;"
+        hover_styles += f"font-size: {round(base_font * scale * hover_scale)}px;"
     if thicker_border_on_hover:
         hover_styles += f"border-width: {hover_border}px;"
 
@@ -154,6 +155,8 @@ class MainMenu(QWidget):
         super().__init__()
         self.app = app
 
+        scale = get_scale(self.screen().size()) 
+
         # Основной лейаут
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -176,7 +179,7 @@ class MainMenu(QWidget):
         # Лейаут для кнопок внутри overlay
         button_layout = QVBoxLayout(self.button_overlay)
         button_layout.setAlignment(Qt.AlignCenter)
-        button_layout.setSpacing(15)
+        button_layout.setSpacing(ceil(15*scale))
         button_layout.setContentsMargins(0, 0, 0, 0)
 
         # Кнопка «РЕШИТЬ ЗАДАЧУ!»
@@ -482,10 +485,10 @@ class Slider(QWidget):
 
         QSlider::handle:horizontal {{
             background: #111111;
-            width: {22*scale}px;
-            height: {22*scale}px;
-            border-radius: {11*scale}px;
-            margin: {-6*scale}px {-3*scale}px;
+            width: {ceil(22*scale)}px;
+            height: {ceil(22*scale)}px;
+            border-radius: {ceil(11*scale)}px;
+            margin: {ceil(-6*scale)}px {ceil(-3*scale)}px;
             border: none;
         }}
 
@@ -515,37 +518,61 @@ class Slider(QWidget):
         self.input.editingFinished.connect(self.on_input_change)
 
         self.setFixedHeight(67*scale)
-        main_layout.setSpacing(2)
-        main_layout.setContentsMargins(13,0,0,5)
+        main_layout.setSpacing(2*scale)
+        main_layout.setContentsMargins(13*scale,0,0,5*scale)
 
     def on_slider_change(self, value):
+        old = self.input.text()
+        if value >= self.max_value:
+            self.input.setText(str(self.max_value))
+            return
+
         if "." not in self.input.text():
             self.input.setText(str(value))
         else:
-            old = self.input.text()
             if "." in old:
                 decimals = old.split(".")[1]
                 self.input.setText(f"{value}.{decimals}")
 
     def on_input_change(self):
         text = self.input.text().strip()
+
         if not text:
             return
+
         try:
             value = float(text)
         except ValueError:
             self.input.setText(str(self.slider.value()))
+            return
 
-        value = max(self.min_value, min(value, self.max_value))
-        self.slider.setValue(int(value))
+        # ограничение диапазона
+        clamped_value = max(self.min_value, min(value, self.max_value))
+
+        # обновляем поле
+        if clamped_value >= self.max_value:
+            self.input.setText(str(self.max_value))
+        elif clamped_value <= self.min_value:
+            self.input.setText(str(self.min_value))
+        else:
+            # норм форматирование
+            if float(clamped_value).is_integer():
+                self.input.setText(str(int(clamped_value)))
+            else:
+                self.input.setText(f"{clamped_value:.2f}")
+
+        # обновляем слайдер (даже если значение то же самое)
+        self.slider.setValue(int(clamped_value))
 
 # ---------------- КАСТОМНАЯ ПАНЕЛЬ ----------------  
 class CastomPanel(QWidget):
     def __init__(self, radius=20,border_width=3):
         super().__init__()
 
-        self.radius = radius
-        self.border_width = border_width
+        scale = get_scale(self.screen().size()) 
+
+        self.radius = radius*scale
+        self.border_width = ceil(border_width*scale)
         self.border_color = '#111111'
 
         self.setAttribute(Qt.WA_TranslucentBackground)
@@ -582,11 +609,11 @@ class input_panel(CastomPanel):
             "P": 10.4
         }
 
-
+        scale = get_scale(self.screen().size()) 
 
         layout = QVBoxLayout(self)
-        layout.setSpacing(5)
-        layout.setContentsMargins(10,10,10,10)
+        layout.setSpacing(ceil(5*scale))
+        layout.setContentsMargins(ceil(10*scale),ceil(10*scale),ceil(10*scale),ceil(10*scale))
 
         self.sliders = {}
         label_dict1 = {"P_пл": "Н", "P": "Н"}
@@ -596,15 +623,15 @@ class input_panel(CastomPanel):
             slider = Slider(label_dict1[key], key, min_value=0)  # создаём
             self.sliders[key] = slider             # сохраняем
             layout.addWidget(slider)
-            layout.setSpacing(-20)
+            layout.setSpacing(ceil(-20*scale))
 
         for key in label_dict2:
             slider = Slider(label_dict2[key], key, min_value=1)  # создаём
             self.sliders[key] = slider             # сохраняем
             layout.addWidget(slider)
-            layout.setSpacing(-20)
+            layout.setSpacing(ceil(-20*scale))
 
-        layout.setSpacing(35)
+        layout.setSpacing(ceil(35*scale))
 
         btn_row = QHBoxLayout()
         self.reset_btn = QPushButton("СБРОСИТЬ")
@@ -639,7 +666,7 @@ class input_panel(CastomPanel):
         self.random_btn.styleSheet() +
         "QPushButton#mainButton { background-color: #111111; color: white; }")
         btn_row.addWidget(self.reset_btn)
-        btn_row.setSpacing(10)
+        btn_row.setSpacing(ceil(10*scale))
         btn_row.addWidget(self.random_btn)
 
         layout.addLayout(btn_row)
@@ -750,10 +777,12 @@ class result_panel(CastomPanel):
     def __init__(self, input_panel_ref):
         super().__init__()
         self.input_panel = input_panel_ref 
+
         scale = get_scale(self.screen().size()) 
 
         layout = QVBoxLayout(self)
-        layout.setSpacing(10)
+        layout.setContentsMargins(ceil(10*scale),ceil(10*scale),ceil(10*scale),ceil(10*scale))
+        layout.setSpacing(ceil(10*scale))
 
         self.values = {}
         values_layout = QHBoxLayout()
@@ -764,7 +793,7 @@ class result_panel(CastomPanel):
             value_ans = answer_panel(label_dict[key], key)
             self.values[key] = value_ans             
             values_layout.addWidget(value_ans)
-            values_layout.setSpacing(-5)
+            values_layout.setSpacing(ceil(-5*scale))
 
         layout.addLayout(values_layout)
 
@@ -793,9 +822,10 @@ class result_panel(CastomPanel):
         )
         
         btn_row.addWidget(self.reset_btn)
-        btn_row.setSpacing(-5)
+        btn_row.setSpacing(ceil(-5*scale))
         btn_row.addWidget(self.check_btn)
         layout.addLayout(btn_row)
+        layout.addStretch()
 
     # --- МЕТОД СБРОСА ---
     def clear_results(self):
@@ -840,22 +870,25 @@ class SolverPage(QWidget):
         super().__init__()
         self.app = app
 
+        scale = get_scale(self.screen().size()) 
+
         # Виджет для сообщения об ошибке
         self.error_label = QLabel("Некорректные значения параметров!")
         self.error_label.setObjectName("errorLabel")
         self.error_label.setVisible(False)  # Изначально скрыт
 
         # Стиль для сообщения об ошибке
-        error_style = """
-        QLabel#errorLabel {
+        error_style = f"""
+        QLabel {{
             color: #111111;
-            font-size: 18px;
+            font-size: {18*scale}px;
             font-weight: bold;
             font-family: Segoe Pro;
             background-color: transparent;
-        }
+        }}
         """
         self.error_label.setStyleSheet(error_style)
+
 
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -875,8 +908,8 @@ class SolverPage(QWidget):
         # Лейаут всего внутри overlay
         all_layout = QHBoxLayout(self.all_overlay)
         #all_layout.setAlignment(Qt.AlignCenter)
-        all_layout.setContentsMargins(20, 70, 20, 15)
-        all_layout.setSpacing(20)
+        all_layout.setContentsMargins(20*scale, 70*scale, 20*scale, 15*scale)
+        all_layout.setSpacing(20*scale)
 
         # ---- ЛЕВАЯ ПАНЕЛЬ ----
         left_widget = QWidget()
@@ -900,7 +933,7 @@ class SolverPage(QWidget):
 
         left_layout.addWidget(self.input_panel)
         left_layout.addWidget(self.result_panel)
-        left_layout.addStretch()
+        #left_layout.addStretch()
 
         #all_layout.addWidget(left_widget)
 
@@ -909,7 +942,7 @@ class SolverPage(QWidget):
         right = QVBoxLayout(right_widget)
 
         self.graph = GraphWidget()
-        self.graph.setMinimumHeight(250)
+        self.graph.setMinimumHeight(250*scale)
 
         right.addWidget(self.graph)
 
@@ -944,7 +977,7 @@ class SolverPage(QWidget):
         #right.addWidget(self.error_label)
         #right.setAlignment(Qt.AlignBottom)
 
-        self.error_label.setFixedHeight(100)
+        self.error_label.setFixedHeight(100*scale)
 
         btns = QVBoxLayout()
         btns.addStretch()
