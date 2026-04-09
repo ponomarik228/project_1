@@ -297,6 +297,8 @@ class HintDialog(QDialog):
     def __init__(self):
         super().__init__()
 
+        scale = get_scale(self.screen().size()) 
+
         #убираем рамку винды
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
 
@@ -307,19 +309,19 @@ class HintDialog(QDialog):
 
         # главный layout
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setContentsMargins(30*scale, 30*scale, 30*scale, 30*scale)
 
         # --- карточка ---
         self.card = QWidget(self)
         self.card.setObjectName("card")
-        self.card.setFixedSize(550, 650)
+        self.card.setFixedSize(550*scale, 650*scale)
 
         card_layout = QVBoxLayout(self.card)
-        card_layout.setContentsMargins(40, 40, 40, 40)
-        card_layout.setSpacing(15)
+        card_layout.setContentsMargins(40*scale, 40*scale, 40*scale, 40*scale)
+        card_layout.setSpacing(15*scale)
 
         text_layout = QVBoxLayout(self)
-        text_layout.setContentsMargins(25, 0, 25, 25)
+        text_layout.setContentsMargins(25*scale, 0, 25*scale, 25*scale)
         #text_layout.setSpacing(15)
 
         # заголовок
@@ -339,7 +341,7 @@ class HintDialog(QDialog):
         generate_adaptive_qss(btn, 
                           base_size=(300, 47),
                           base_font=15,
-                          base_padding=(8, 20),
+                          base_padding=(6, 6),
                           base_border_radius=14,
                           base_border_width=3,
                           border_color="#F3F3F3",
@@ -375,29 +377,29 @@ class HintDialog(QDialog):
         layout.addWidget(self.card, alignment=Qt.AlignCenter)
 
         # стиль
-        self.setStyleSheet("""
-            QDialog {
+        self.setStyleSheet(f"""
+            QDialog {{
                 background-color: rgba(0, 0, 0, 180);  /* Полупрозрачное затемнение всего окна */
-            }
+            }}
 
-            QWidget#card {
+            QWidget#card {{
                 background-color: rgba(0, 0, 0, 235);  /* Тёмный фон карточки */
-                border-radius: 30px;                        /* Закруглённые углы */
-                margin: 20px;                             /* Отступ от краёв диалога */
-            }
+                border-radius: {30*scale}px;                        /* Закруглённые углы */
+                margin: {20*scale}px;                             /* Отступ от краёв диалога */
+            }}
 
-            QLabel#title {
-                font-size: 60px;
+            QLabel#title {{
+                font-size: {60*scale}px;
                 font-family: Gerhaus;
                 color: white;
                 font-weight: bold;
-            }
+            }}
 
-            QLabel#text {
-                font-size: 20px;
+            QLabel#text {{
+                font-size: {20*scale}px;
                 font-family: Segoe Pro;
                 color: white;
-            }
+            }}
         """)
 
         # для перетаскивания
