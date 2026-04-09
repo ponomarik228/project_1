@@ -303,19 +303,24 @@ class HintDialog(QDialog):
         #прозрачность окна
         self.setAttribute(Qt.WA_TranslucentBackground)
 
-        self.resize(500, 650)
+        #self.setFixedSize(500, 650)
 
         # главный layout
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(30, 30, 30, 30)
 
         # --- карточка ---
         self.card = QWidget(self)
         self.card.setObjectName("card")
+        self.card.setFixedSize(550, 650)
 
         card_layout = QVBoxLayout(self.card)
-        card_layout.setContentsMargins(30, 30, 30, 30)
+        card_layout.setContentsMargins(40, 40, 40, 40)
         card_layout.setSpacing(15)
+
+        text_layout = QVBoxLayout(self)
+        text_layout.setContentsMargins(25, 0, 25, 25)
+        #text_layout.setSpacing(15)
 
         # заголовок
         title = QLabel("ПОДСКАЗКА")
@@ -323,55 +328,75 @@ class HintDialog(QDialog):
 
         # текст
         text = QLabel(
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit..."
+            "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet."
         )
         text.setWordWrap(True)
         text.setObjectName("text")
 
         # кнопка
         btn = QPushButton("ПОСМОТРЕТЬ РЕШЕНИЕ")
+        btn.setObjectName("help_btn")
+        generate_adaptive_qss(btn, 
+                          base_size=(300, 47),
+                          base_font=15,
+                          base_padding=(8, 20),
+                          base_border_radius=14,
+                          base_border_width=3,
+                          border_color="#F3F3F3",
+                          hover_scale=1.25,
+                          enlarge_on_hover=True)
 
         # крестик
-        close_btn = QPushButton("✕")
-        close_btn.setFixedSize(30, 30)
+        close_btn = QPushButton("X")
+        close_btn.setObjectName("help_btn")
+        generate_adaptive_qss(close_btn, 
+                          base_size=(36, 36),
+                          base_font=12,
+                          base_padding=(1, 1),
+                          base_border_radius=18,
+                          base_border_width=3,
+                          border_color="#F3F3F3",
+                          hover_scale=1.22,
+                          enlarge_on_hover=True)
+
+
         close_btn.clicked.connect(self.close)
 
         card_layout.addWidget(close_btn, alignment=Qt.AlignRight)
-        card_layout.addWidget(title)
-        card_layout.addWidget(text)
+
+        text_layout.addWidget(title)
+        text_layout.addWidget(text)
+
+        card_layout.addLayout(text_layout)
+
         card_layout.addStretch()
-        card_layout.addWidget(btn)
+        card_layout.addWidget(btn, alignment=Qt.AlignCenter)
 
         layout.addWidget(self.card, alignment=Qt.AlignCenter)
 
         # стиль
         self.setStyleSheet("""
-            QDialog#card {
-                background-color: rgba(0, 0, 0, 235);
-                border-radius: 20px;
+            QDialog {
+                background-color: rgba(0, 0, 0, 180);  /* Полупрозрачное затемнение всего окна */
+            }
+
+            QWidget#card {
+                background-color: rgba(0, 0, 0, 235);  /* Тёмный фон карточки */
+                border-radius: 30px;                        /* Закруглённые углы */
+                margin: 20px;                             /* Отступ от краёв диалога */
             }
 
             QLabel#title {
-                font-size: 32px;
+                font-size: 60px;
+                font-family: Gerhaus;
                 color: white;
                 font-weight: bold;
             }
 
             QLabel#text {
-                font-size: 16px;
+                font-size: 20px;
+                font-family: Segoe Pro;
                 color: white;
-            }
-
-            QPushButton {
-                background-color: transparent;
-                color: white;
-                border: 2px solid white;
-                border-radius: 10px;
-                padding: 10px;
-            }
-
-            QPushButton:hover {
-                background-color: rgba(255,255,255,0.1);
             }
         """)
 
@@ -379,9 +404,11 @@ class HintDialog(QDialog):
         self.drag_pos = None
 
     # затемнение фона
+    '''
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor(0, 0, 0, 235))  # затемнение
+    '''
 
     # --- перетаскивание ---
     def mousePressEvent(self, event):
@@ -644,6 +671,7 @@ class input_panel(CastomPanel):
             base_border_radius=14,
             base_border_width=3,
             border_color="#111111",
+            hover_scale=1.25,
             enlarge_on_hover=True
         )
         self.reset_btn.clicked.connect(self.reset_all_sliders)
@@ -659,6 +687,7 @@ class input_panel(CastomPanel):
             base_border_radius=14,
             base_border_width=3,
             border_color="#111111",
+            hover_scale=1.25,
             enlarge_on_hover=True,
             thicker_border_on_hover=False
         )
@@ -805,7 +834,7 @@ class result_panel(CastomPanel):
         self.reset_btn.setObjectName("secondaryButton")
         generate_adaptive_qss(
             self.reset_btn, base_size=(200, 47), base_font=15, base_padding=(8, 20),
-            base_border_radius=14, base_border_width=3, border_color="#111111", enlarge_on_hover=True
+            base_border_radius=14, base_border_width=3, border_color="#111111", hover_scale=1.25, enlarge_on_hover=True
         )
         
         self.check_btn = QPushButton("ПРОВЕРИТЬ ОТВЕТ")
@@ -813,7 +842,7 @@ class result_panel(CastomPanel):
         self.check_btn.setObjectName("mainButton")
         generate_adaptive_qss(
             self.check_btn, base_size=(270, 47), base_font=15, base_padding=(8, 20),
-            base_border_radius=14, base_border_width=3, border_color="#111111",
+            base_border_radius=14, base_border_width=3, border_color="#111111", hover_scale=1.25,
             enlarge_on_hover=True, thicker_border_on_hover=False
         )
         self.check_btn.setStyleSheet(
@@ -958,6 +987,7 @@ class SolverPage(QWidget):
             base_border_radius=14,
             base_border_width=3,
             border_color="#111111",
+            hover_scale=1.25,
             enlarge_on_hover=True
         )
         self.back = QPushButton("НАЗАД")
@@ -970,6 +1000,7 @@ class SolverPage(QWidget):
             base_border_radius=14,
             base_border_width=3,
             border_color="#111111",
+            hover_scale=1.25,
             enlarge_on_hover=True
         )
 
@@ -1083,6 +1114,12 @@ QPushButton#secondaryButton {
     background-color: transparent;         
     font-family: Gerhaus;
     color: #111111;
+}
+
+QPushButton#help_btn {
+    font-weight: bold;               
+    font-family: Gerhaus;
+    color: white;
 }
 
 QLabel#title {
