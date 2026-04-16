@@ -60,6 +60,110 @@ from random import randint, random
 from math import ceil
 
 
+class WhiteMessageBox(QDialog):
+    def __init__(self, parent, title, text, icon_type="info"):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        # Убираем стандартную рамку окна, чтобы сделать свою
+        self.setWindowFlags(Qt.Dialog | Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+
+        scale = get_scale(self.screen().size())
+
+        # Основной лейаут
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Белая карточка
+        self.card = QFrame()
+        self.card.setObjectName("whiteCard")
+        self.card.setStyleSheet(
+            f"""
+            QFrame#whiteCard {{
+                background-color: #ffffff;
+                border: 2px solid #111111;
+                border-radius: {15 * scale}px;
+            }}
+        """
+        )
+
+        card_layout = QVBoxLayout(self.card)
+        card_layout.setContentsMargins(25 * scale, 25 * scale, 25 * scale, 25 * scale)
+        card_layout.setSpacing(15 * scale)
+
+        # Заголовок и текст
+        content_layout = QHBoxLayout()
+
+        # Иконка (эмодзи или символ)
+        icon_label = QLabel()
+        icon_label.setAlignment(Qt.AlignTop)
+        if icon_type == "info":
+            icon_label.setText("ℹ️")
+        elif icon_type == "critical":
+            icon_label.setText("ℹ️")
+        elif icon_type == "warning":
+            icon_label.setText("⚠️")
+        else:
+            icon_label.setText("💬")
+
+        icon_label.setStyleSheet(f"font-size: {30 * scale}px;")
+
+        # Текст сообщения
+        text_label = QLabel(text)
+        text_label.setWordWrap(True)
+        text_label.setStyleSheet(
+            f"""
+            color: #111111;
+            font-size: {16 * scale}px;
+            font-family: "Segoe Pro", sans-serif;
+            font-weight: normal;
+        """
+        )
+
+        content_layout.addWidget(icon_label)
+        content_layout.addWidget(text_label)
+        content_layout.setSpacing(15 * scale)
+
+        card_layout.addLayout(content_layout)
+
+        # Кнопка OK
+        btn_ok = QPushButton("OK")
+        btn_ok.setObjectName("okButton")
+        btn_ok.setFixedSize(100 * scale, 40 * scale)
+        btn_ok.setStyleSheet(
+            f"""
+            QPushButton#okButton {{
+                background-color: #111111;
+                color: white;
+                border: none;
+                border-radius: {8 * scale}px;
+                font-weight: bold;
+                font-family: "Gerhaus", sans-serif;
+                font-size: {14 * scale}px;
+            }}
+            QPushButton#okButton:hover {{
+                background-color: #333333;
+            }}
+            QPushButton#okButton:pressed {{
+                background-color: #000000;
+            }}
+        """
+        )
+        btn_ok.clicked.connect(self.accept)
+
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+        btn_layout.addWidget(btn_ok)
+
+        card_layout.addLayout(btn_layout)
+
+        main_layout.addWidget(self.card)
+
+        # Фиксируем размер (примерно)
+        self.setMinimumWidth(400 * scale)
+        self.adjustSize()
+
+
 # ---------------- РАЗМЕР ЭКРАНА ----------------
 def get_scale(screen_size, base_resolution=(1280, 720)):
     scale_w = screen_size.width() / base_resolution[0]
@@ -303,7 +407,7 @@ class AboutPage(QWidget):
         self.app = app
 
         layout = QVBoxLayout(self)
-        layout.setSpacing(10)
+        layout.setSpacing(20)
 
         title = QLabel("О ПРОГРАММЕ")
         title.setObjectName("title")
@@ -316,7 +420,9 @@ class AboutPage(QWidget):
         text.setWordWrap(True)
         layout.addWidget(text)
 
-        authors = QLabel("ОБ АВТОРАХ\n\nПономарев\nБехтерев\nШишак")
+        authors = QLabel(
+            "ОБ АВТОРАХ\n\nПономарев, занимался решением задачи и внедрением алгоритма в программу\nБехтерев, рисовал график и дорабатывал остальной код\nШишак, занимался дизайном программы"
+        )
         layout.addWidget(authors)
 
         layout.addStretch()
@@ -930,6 +1036,13 @@ class answer_panel(QWidget):
         self.setFixedHeight(60 * scale)
         # main_layout.setSpacing(2)
         main_layout.setContentsMargins(28, 0, 0, 3)
+        # Внутри класса answer_panel
+
+    def get_value_ans(self):
+        try:
+            return float(self.input.text())
+        except ValueError:
+            return None
 
 
 # ---------------- ПАНЕЛЬ РЕЗУЛЬТАТА ----------------
@@ -952,6 +1065,7 @@ class result_panel(CastomPanel):
         label_dict = {"X_0": "Н", "Y_0": "H", "Y_C": "H"}
 
         for key in label_dict:
+            # Создаем панель ответа
             value_ans = answer_panel(label_dict[key], key)
             self.values[key] = value_ans
             values_layout.addWidget(value_ans)
@@ -977,8 +1091,9 @@ class result_panel(CastomPanel):
             enlarge_on_hover=True,
         )
 
+        # ИЗМЕНЕНИЕ: Кнопка теперь называется "ПРОВЕРИТЬ" и вызывает новую функцию
         self.check_btn = QPushButton("ПРОВЕРИТЬ ОТВЕТ")
-        self.check_btn.clicked.connect(self.calculate_physics)
+        self.check_btn.clicked.connect(self.check_user_answer)
         self.check_btn.setObjectName("mainButton")
         generate_adaptive_qss(
             self.check_btn,
@@ -1005,42 +1120,75 @@ class result_panel(CastomPanel):
 
     # --- МЕТОД СБРОСА ---
     def clear_results(self):
-        self.set_value_ans("X_0", 0.0)
-        self.set_value_ans("Y_0", 0.0)
-        self.set_value_ans("Y_C", 0.0)
+        self.set_value_ans("X_0", "")
+        self.set_value_ans("Y_0", "")
+        self.set_value_ans("Y_C", "")
 
-    # --- МЕТОД РАСЧЕТА ---
-    def calculate_physics(self):
+    def check_user_answer(self):
         try:
+            # 1. Получаем входные данные
             weight = float(self.input_panel.get_value("P_пл"))
             force_p = float(self.input_panel.get_value("P"))
             side_oa = float(self.input_panel.get_value("OA"))
             side_ab = float(self.input_panel.get_value("AB"))
             side_oc = float(self.input_panel.get_value("OC"))
 
+            # 2. Рассчитываем правильные ответы (Эталон)
             hypotenuse_ob = (side_oa**2 + side_ab**2) ** 0.5
-            res_x0 = -force_p * (side_ab / hypotenuse_ob)
-            res_yc = (2 * side_oa * weight + 3 * (hypotenuse_ob / 2) * force_p) / (
+
+            # Формулы из вашего кода
+            correct_x0 = -force_p * (side_ab / hypotenuse_ob)
+            correct_yc = (2 * side_oa * weight + 3 * (hypotenuse_ob / 2) * force_p) / (
                 3 * side_oc
             )
-            res_y0 = force_p * (side_oa / hypotenuse_ob) + weight - res_yc
+            correct_y0 = force_p * (side_oa / hypotenuse_ob) + weight - correct_yc
 
-            self.set_value_ans("X_0", round(res_x0, 2))
-            self.set_value_ans("Y_C", round(res_yc, 2))
-            self.set_value_ans("Y_0", round(res_y0, 2))
+            # 3. Получаем ответы пользователя
+            user_x0 = self.values["X_0"].get_value_ans()
+            user_y0 = self.values["Y_0"].get_value_ans()
+            user_yc = self.values["Y_C"].get_value_ans()
+
+            if any(v is None for v in [user_x0, user_y0, user_yc]):
+                dlg = WhiteMessageBox(
+                    self, "Внимание", "Заполните все поля ответов!", "warning"
+                )
+                dlg.exec()
+                return
+
+            # 4. Сравниваем с погрешностью (epsilon = 0.1)
+            epsilon = 0.1
+            is_x_correct = abs(user_x0 - correct_x0) < epsilon
+            is_y0_correct = abs(user_y0 - correct_y0) < epsilon
+            is_yc_correct = abs(user_yc - correct_yc) < epsilon
+
+            if is_x_correct and is_y0_correct and is_yc_correct:
+                dlg = WhiteMessageBox(
+                    self,
+                    "Результат",
+                    "✅ ВЕРНО! Все реакции найдены правильно.",
+                    "info",
+                )
+                dlg.exec()
+            else:
+                errors = []
+                if not is_x_correct:
+                    errors.append("X_0")
+                if not is_y0_correct:
+                    errors.append("Y_0")
+                if not is_yc_correct:
+                    errors.append("Y_C")
+
+                msg = f"❌ НЕВЕРНО.\nОшибки в параметрах: {', '.join(errors)}\n\nПопробуйте пересчитать."
+                dlg = WhiteMessageBox(self, "Результат", msg, "critical")
+                dlg.exec()
 
         except Exception as e:
-            show_error_message(self, "Ошибка", f"Произошла ошибка: {str(e)}")
+            dlg = WhiteMessageBox(
+                self, "Ошибка", f"Произошла ошибка: {str(e)}", "critical"
+            )
+            dlg.exec()
 
-    def get_value_ans(self, key):
-        try:
-            return float(self.sliders[key].input.text())
-        except:
-            return 0.0
-
-    def set_value_ans(self, key, value):
-        if key in self.values:
-            self.values[key].input.setText(str(value))
+    # Метод style_message_box больше не нужен, можете его удалить
 
 
 # ---------------- ОСНОВНОЙ ЭКРАН ----------------
@@ -1284,6 +1432,35 @@ class App(QMainWindow):
 
 
 STYLE = """
+/* === ИСПРАВЛЕНИЕ ЧЕРНЫХ ОКОН === */
+QMessageBox {
+    background-color: #ffffff;  /* Белый фон */
+    color: #000000;             /* Черный текст */
+}
+
+QMessageBox QLabel {
+    color: #000000;             /* Текст сообщения черный */
+    background-color: transparent;
+}
+
+QMessageBox QPushButton {
+    background-color: #111111;  /* Кнопки черные (как у вас в дизайне) */
+    color: white;               /* Текст на кнопках белый */
+    border: 1px solid #333;
+    padding: 5px 15px;
+    border-radius: 4px;
+}
+
+QMessageBox QPushButton:hover {
+    background-color: #333333;  /* При наведении чуть светлее */
+}
+/* ============================= */
+
+QMainWindow {
+    border-image: url("ProjUITest/Assets/bg.png") 0 0 0 0 stretch stretch; 
+}
+
+
 QMainWindow {
     border-image: url("ProjUITest/Assets/bg.png") 0 0 0 0 stretch stretch; 
 }
