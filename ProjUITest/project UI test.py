@@ -642,7 +642,7 @@ class input_panel(CastomPanel):
 
         layout = QVBoxLayout(self)
         layout.setSpacing(ceil(5*scale))
-        layout.setContentsMargins(ceil(10*scale),ceil(10*scale),ceil(10*scale),ceil(10*scale))
+        layout.setContentsMargins(ceil(5*scale),ceil(5*scale),ceil(5*scale),ceil(5*scale))
 
         self.sliders = {}
         label_dict1 = {"P_пл": "Н", "P": "Н"}
@@ -812,7 +812,7 @@ class result_panel(CastomPanel):
         scale = get_scale(self.screen().size()) 
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(ceil(10*scale),ceil(10*scale),ceil(10*scale),ceil(10*scale))
+        layout.setContentsMargins(ceil(5*scale),ceil(5*scale),ceil(5*scale),ceil(5*scale))
         layout.setSpacing(ceil(10*scale))
 
         self.values = {}
@@ -897,6 +897,36 @@ class result_panel(CastomPanel):
 
 # ---------------- ОСНОВНОЙ ЭКРАН ----------------
 class SolverPage(QWidget):
+    def create_task_box(self, text):
+        scale = get_scale(self.screen().size())
+        
+        label = QLabel(text)
+        label.setWordWrap(True)  # Автоматический перенос строк
+        label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        
+        # Настройка шрифта и отступов
+        font_size = int(14 * scale)
+        padding = int(15 * scale)
+        border_radius = int(10 * scale)
+        
+        label.setStyleSheet(f"""
+            QLabel {{
+                background-color: rgba(255, 255, 255, 220); /* Полупрозрачный белый фон */
+                color: #111111;
+                font-size: {font_size}px;
+                font-family: Segoe Pro;
+                font-weight: bold;
+                border-radius: {border_radius}px;
+                padding: {padding}px;
+                border: 2px solid #111111;
+               }}
+            """)
+        
+        # Ограничиваем высоту, чтобы не занимало весь экран, если текст длинный
+        # label.setMaximumHeight(int(150 * scale)) 
+        
+        return label
+    
     def __init__(self, app):
         super().__init__()
         self.app = app
@@ -939,34 +969,33 @@ class SolverPage(QWidget):
         # Лейаут всего внутри overlay
         all_layout = QHBoxLayout(self.all_overlay)
         #all_layout.setAlignment(Qt.AlignCenter)
-        all_layout.setContentsMargins(20*scale, 70*scale, 20*scale, 15*scale)
+        all_layout.setContentsMargins(20*scale, 20*scale, 20*scale, 15*scale)
         all_layout.setSpacing(20*scale)
 
-        # ---- ЛЕВАЯ ПАНЕЛЬ ----
+                # ---- ЛЕВАЯ ПАНЕЛЬ ----
         left_widget = QWidget()
         left_layout = QVBoxLayout(left_widget)
+        left_layout.setSpacing(ceil(10*scale)) # Отступ между элементами
 
+        # 1. Текст задания (НОВОЕ)
+        task_text = (
+            "Однородная пластинка весом 5Н, имеющая форму прямоугольного треугольника, "
+            "шарнирно прикреплена к опоре О и свободно опирается на гладкую опору С. "
+            "АВ = 10 см, ОА = 24 см, ОС = 8 см. Перпендикулярно к стороне ОВ приложена сила Р = 10.4Н. "
+            "OD = BD. Определить реакции опор."
+        )
+        self.task_label = self.create_task_box(task_text)
+        left_layout.addWidget(self.task_label)
+
+        # 2. Панель ввода
         self.input_panel = input_panel()
-        self.result_panel = result_panel(self.input_panel)
-
-        self.input_panel.set_value("OC", 8)
-        self.input_panel.set_value("AB", 10)
-        self.input_panel.set_value("OA", 24)
-        self.input_panel.set_value("P_пл", 5)
-        self.input_panel.set_value("P", 10.4)
-
-        # Подключаем отслеживание изменений в слайдерах для проверки валидности
-        for slider_key in self.input_panel.sliders:
-            slider = self.input_panel.sliders[slider_key]
-            slider.slider.valueChanged.connect(self.update_error_status)
-            slider.input.editingFinished.connect(self.update_error_status)
-
-
         left_layout.addWidget(self.input_panel)
-        left_layout.addWidget(self.result_panel)
-        #left_layout.addStretch()
 
-        #all_layout.addWidget(left_widget)
+        # 3. Панель результатов
+        self.result_panel = result_panel(self.input_panel)
+        left_layout.addWidget(self.result_panel)
+        
+        left_layout.addStretch() # Растягиватель внизу, чтобы прижать контент вверх
 
         # ---- ПРАВАЯ ПАНЕЛЬ ----
         right_widget = QWidget()
