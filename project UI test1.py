@@ -345,12 +345,12 @@ class GraphWidget(QWidget):
 
     def update_plot(self):
         # Увеличиваем figsize (ширина, высота), чтобы картинка была БОЛЬШЕ
-        fig, ax = plt.subplots(figsize=(12, 9), dpi=100)
+        fig, ax = plt.subplots(figsize=(11, 9), dpi=100)
 
         # Оси
-        ax.arrow(0, 0, 8, 0, head_width=0.2, length_includes_head=True)
+        ax.arrow(0, 0, 7, 0, head_width=0.2, length_includes_head=True)
         ax.arrow(0, 0, 0, 5, head_width=0.2, length_includes_head=True)
-        ax.text(8.2, 0, "X")
+        ax.text(7.2, 0, "X")
         ax.text(0, 5.2, "Y")
 
         # Точка O
@@ -412,7 +412,7 @@ class GraphWidget(QWidget):
         # === КОНВЕРТАЦИЯ В КАРТИНКУ (Без ошибок!) ===
         buf = io.BytesIO()
         # bbox_inches='tight' убирает лишние белые поля
-        fig.savefig(buf, format="png", bbox_inches="tight")
+        fig.savefig(buf, format="png", transparent=True, bbox_inches="tight")
         buf.seek(0)
         plt.close(fig)  # Закрываем, чтобы не грузить память
 
@@ -1072,8 +1072,9 @@ class SolverPage(QWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
+        
         self.corner = CornerWidget(
-            top_right_text="",
+            top_right_text="РЕШЕНИЕ ЗАДАЧИ",
             show_bottom=False,
         )
         main_layout.addWidget(self.corner)
@@ -1084,6 +1085,12 @@ class SolverPage(QWidget):
         self.all_overlay.setFrameStyle(QFrame.NoFrame)
 
         # Лейаут всего внутри overlay
+        all_layout = QHBoxLayout(self.all_overlay)
+        #all_layout.setAlignment(Qt.AlignCenter)
+        all_layout.setContentsMargins(20*scale, 70*scale, 20*scale, 15*scale)
+        all_layout.setSpacing(20*scale)
+
+
 
         # 1. Создаем главный вертикальный лейаут для всего содержимого
         main_content_layout = QVBoxLayout(self.all_overlay)
@@ -1110,12 +1117,19 @@ class SolverPage(QWidget):
         font_task.setPointSize(int(16 * scale))
         font_task.setBold(True)
         self.task_label.setFont(font_task)
-        self.task_label.setStyleSheet(
-            "color: #111111; background-color: transparent; margin-bottom: 10px;"
-        )
+        # Стиль для сообщения об ошибке
+        task_style = f"""
+        QLabel {{
+            color: #111111;
+            font-size: {18*scale}px;
+            font-weight: bold;
+            font-family: Segoe Pro;
+            background-color: transparent;
+        }}
+        """
+        self.task_label.setStyleSheet(task_style)
 
-        # Добавляем текст в самый верх лейаута
-        main_content_layout.addWidget(self.task_label)
+        
 
         # 3. Создаем горизонтальный контейнер для панелей и графика (чтобы они были рядом)
         panels_layout = QHBoxLayout()
@@ -1156,9 +1170,13 @@ class SolverPage(QWidget):
         right_layout_inner.setContentsMargins(0, 0, 0, 0)
         right_layout_inner.setSpacing(10 * scale)
 
+        # Добавляем текст в самый верх лейаута
+        right_layout_inner.addWidget(self.task_label)
+
         self.graph = GraphWidget()
         self.graph.setMinimumHeight(250 * scale)
         right_layout_inner.addWidget(self.graph)
+
 
         # Кнопки
         btns_layout = QVBoxLayout()
@@ -1218,6 +1236,8 @@ class SolverPage(QWidget):
 
         # Растягиватель, чтобы контент не разъезжался вниз
         main_content_layout.addStretch()
+
+        all_layout.addLayout(main_content_layout)
 
         # Привязка кнопок
         self.back.clicked.connect(lambda: self.app.go(0))

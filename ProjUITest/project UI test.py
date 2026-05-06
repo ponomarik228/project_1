@@ -977,15 +977,6 @@ class SolverPage(QWidget):
         left_layout = QVBoxLayout(left_widget)
         left_layout.setSpacing(ceil(10*scale)) # Отступ между элементами
 
-        # 1. Текст задания (НОВОЕ)
-        task_text = (
-            "Однородная пластинка весом 5Н, имеющая форму прямоугольного треугольника, "
-            "шарнирно прикреплена к опоре О и свободно опирается на гладкую опору С. "
-            "АВ = 10 см, ОА = 24 см, ОС = 8 см. Перпендикулярно к стороне ОВ приложена сила Р = 10.4Н. "
-            "OD = BD. Определить реакции опор."
-        )
-        self.task_label = self.create_task_box(task_text)
-        left_layout.addWidget(self.task_label)
 
         # 2. Панель ввода
         self.input_panel = input_panel()
@@ -1003,6 +994,16 @@ class SolverPage(QWidget):
 
         self.graph = GraphWidget()
         self.graph.setMinimumHeight(250*scale)
+
+        # 1. Текст задания (НОВОЕ)
+        task_text = (
+            "Однородная пластинка весом 5Н, имеющая форму прямоугольного треугольника, "
+            "шарнирно прикреплена к опоре О и свободно опирается на гладкую опору С. "
+            "АВ = 10 см, ОА = 24 см, ОС = 8 см. Перпендикулярно к стороне ОВ приложена сила Р = 10.4Н. "
+            "OD = BD. Определить реакции опор."
+        )
+        self.task_label = self.create_task_box(task_text)
+        right.addWidget(self.task_label)
 
         right.addWidget(self.graph)
 
