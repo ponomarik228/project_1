@@ -1,13 +1,3 @@
-"""
-ПЛАН ТОЛЬКО ДЛЯ ТИХОНА!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-НЕ ЛЕЗЬТЕ, СУКИ!!!!!!!!!!!!!!!!!
-
-1. +++
-2. Сделать об авторах, доделать подсказку, адаптировать ее
-3. Сделать "посмотреть решение"
-Пошел нахуй
-"""
-
 import matplotlib.pyplot as plt
 import numpy as np
 import io
@@ -531,7 +521,7 @@ class GraphWidget(QWidget):
 
 # ---------------- ПОДСКАЗКА ----------------
 class HintDialog(QDialog):
-    def __init__(self):
+    def __init__(self, hint_text=""):
         super().__init__()
 
         scale = get_scale(self.screen().size())
@@ -542,8 +532,6 @@ class HintDialog(QDialog):
         # прозрачность окна
         self.setAttribute(Qt.WA_TranslucentBackground)
 
-        # self.setFixedSize(500, 650)
-
         # главный layout
         layout = QVBoxLayout(self)
         layout.setContentsMargins(30 * scale, 30 * scale, 30 * scale, 30 * scale)
@@ -551,43 +539,32 @@ class HintDialog(QDialog):
         # --- карточка ---
         self.card = QWidget(self)
         self.card.setObjectName("card")
-        self.card.setFixedSize(550 * scale, 650 * scale)
-
+        # Делаем карточку адаптивной по высоте, если текста много
+        self.card.setFixedWidth(550 * scale) 
+        
         card_layout = QVBoxLayout(self.card)
         card_layout.setContentsMargins(40 * scale, 40 * scale, 40 * scale, 40 * scale)
         card_layout.setSpacing(15 * scale)
 
-        text_layout = QVBoxLayout(self)
-        text_layout.setContentsMargins(25 * scale, 0, 25 * scale, 25 * scale)
-        # text_layout.setSpacing(15)
+        text_layout = QVBoxLayout() # Исправлено: layout для текста внутри карточки
+        text_layout.setContentsMargins(0, 0, 0, 0)
+        text_layout.setSpacing(15 * scale)
 
         # заголовок
         title = QLabel("ПОДСКАЗКА")
         title.setObjectName("title")
+        title.setAlignment(Qt.AlignCenter)
 
-        # текст
-        text = QLabel("В доработке")
+        # текст подсказки
+        text = QLabel(hint_text if hint_text else "Загрузка...")
         text.setWordWrap(True)
         text.setObjectName("text")
+        text.setAlignment(Qt.AlignLeft | Qt.AlignTop)
 
-        # кнопка
-        btn = QPushButton("ПОСМОТРЕТЬ РЕШЕНИЕ")
-        btn.setObjectName("help_btn")
-        generate_adaptive_qss(
-            btn,
-            base_size=(300, 47),
-            base_font=15,
-            base_padding=(6, 6),
-            base_border_radius=14,
-            base_border_width=3,
-            border_color="#F3F3F3",
-            hover_scale=1.25,
-            enlarge_on_hover=True,
-        )
-
-        # крестик
+        # кнопка закрытия (крестик)
         close_btn = QPushButton("X")
         close_btn.setObjectName("help_btn")
+        close_btn.setFixedSize(36 * scale, 36 * scale)
         generate_adaptive_qss(
             close_btn,
             base_size=(36, 36),
@@ -599,18 +576,34 @@ class HintDialog(QDialog):
             hover_scale=1.22,
             enlarge_on_hover=True,
         )
-
         close_btn.clicked.connect(self.close)
 
+        # кнопка "Понятно" или "Закрыть" внизу
+        btn_close_bottom = QPushButton("ЗАКРЫТЬ")
+        btn_close_bottom.setObjectName("help_btn")
+        generate_adaptive_qss(
+            btn_close_bottom,
+            base_size=(200, 47),
+            base_font=15,
+            base_padding=(6, 6),
+            base_border_radius=14,
+            base_border_width=3,
+            border_color="#F3F3F3",
+            hover_scale=1.25,
+            enlarge_on_hover=True,
+        )
+        btn_close_bottom.clicked.connect(self.close)
+
+        # Сборка карточки
         card_layout.addWidget(close_btn, alignment=Qt.AlignRight)
-
-        text_layout.addWidget(title)
+        card_layout.addWidget(title)
+        card_layout.addLayout(text_layout) # Добавляем лейаут с текстом
+        
+        # Важно: добавляем сам текст в лейаут
         text_layout.addWidget(text)
-
-        card_layout.addLayout(text_layout)
-
+        
         card_layout.addStretch()
-        card_layout.addWidget(btn, alignment=Qt.AlignCenter)
+        card_layout.addWidget(btn_close_bottom, alignment=Qt.AlignCenter)
 
         layout.addWidget(self.card, alignment=Qt.AlignCenter)
 
@@ -618,39 +611,34 @@ class HintDialog(QDialog):
         self.setStyleSheet(
             f"""
             QDialog {{
-                background-color: rgba(0, 0, 0, 180);  /* Полупрозрачное затемнение всего окна */
+                background-color: rgba(0, 0, 0, 180); 
             }}
 
             QWidget#card {{
-                background-color: rgba(0, 0, 0, 235);  /* Тёмный фон карточки */
-                border-radius: {30*scale}px;                        /* Закруглённые углы */
-                margin: {20*scale}px;                             /* Отступ от краёв диалога */
+                background-color: rgba(0, 0, 0, 235); 
+                border-radius: {30*scale}px;                        
+                margin: {20*scale}px;                             
             }}
 
             QLabel#title {{
-                font-size: {60*scale}px;
+                font-size: {40*scale}px; /* Чуть уменьшил, чтобы влезало */
                 font-family: Gerhaus;
                 color: white;
                 font-weight: bold;
+                margin-bottom: 10px;
             }}
 
             QLabel#text {{
-                font-size: {20*scale}px;
+                font-size: {18*scale}px;
                 font-family: Segoe Pro;
                 color: white;
+                line-height: 1.5;
             }}
         """
         )
 
         # для перетаскивания
         self.drag_pos = None
-
-    # затемнение фона
-    """
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.fillRect(self.rect(), QColor(0, 0, 0, 235))  # затемнение
-    """
 
     # --- перетаскивание ---
     def mousePressEvent(self, event):
@@ -1400,7 +1388,23 @@ class SolverPage(QWidget):
         self.overlay.raise_()
 
     def show_hint(self):
-        dialog = HintDialog()
+    # Текст подсказки
+        hint_content = (
+            "<b>1. Геометрия треугольника:</b><br>"
+            "- Найди гипотенузу OB: √(OA² + AB²).<br>"
+            "- Центр тяжести (ЦТ) однородного треугольника находится на расстоянии 1/3 от катетов.<br>"
+            "- Плечо силы P относительно точки O равно половине гипотенузы (так как сила приложена в середине и перпендикулярна ей? Уточни условие OD=BD).<br><br>"
+            
+            "<b>2. Механика (Статика):</b><br>"
+            "- <b>Шарнир O:</b> дает две реакции X₀ и Y₀.<br>"
+            "- <b>Гладкая опора C:</b> дает реакцию Yc, направленную перпендикулярно поверхности (вверх).<br>"
+            "- Составь 3 уравнения равновесия:<br>"
+            "  1. ΣFx = 0 (проекция на ось X)<br>"
+            "  2. ΣFy = 0 (проекция на ось Y)<br>"
+            "  3. ΣMo = 0 (сумма моментов относительно точки O). Это самое важное уравнение, так как оно позволяет найти Yc, не зная реакций в шарнире."
+        )
+        
+        dialog = HintDialog(hint_content)
         dialog.exec()
 
     def resizeEvent(self, event):
