@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QGraphicsDropShadowEffect,
     QStyleOptionSlider,
     QMessageBox,
+    QScrollArea,
 )
 from PySide6.QtCore import (
     Qt,
@@ -67,15 +68,13 @@ class WhiteMessageBox(QDialog):
         # Белая карточка
         self.card = QFrame()
         self.card.setObjectName("whiteCard")
-        self.card.setStyleSheet(
-            f"""
+        self.card.setStyleSheet(f"""
             QFrame#whiteCard {{
                 background-color: #ffffff;
                 border: 2px solid #111111;
                 border-radius: {15 * scale}px;
             }}
-        """
-        )
+        """)
 
         card_layout = QVBoxLayout(self.card)
         card_layout.setContentsMargins(25 * scale, 25 * scale, 25 * scale, 25 * scale)
@@ -101,14 +100,12 @@ class WhiteMessageBox(QDialog):
         # Текст сообщения
         text_label = QLabel(text)
         text_label.setWordWrap(True)
-        text_label.setStyleSheet(
-            f"""
+        text_label.setStyleSheet(f"""
             color: #111111;
             font-size: {16 * scale}px;
             font-family: "Segoe Pro", sans-serif;
             font-weight: normal;
-        """
-        )
+        """)
 
         content_layout.addWidget(icon_label)
         content_layout.addWidget(text_label)
@@ -120,8 +117,7 @@ class WhiteMessageBox(QDialog):
         btn_ok = QPushButton("OK")
         btn_ok.setObjectName("okButton")
         btn_ok.setFixedSize(100 * scale, 40 * scale)
-        btn_ok.setStyleSheet(
-            f"""
+        btn_ok.setStyleSheet(f"""
             QPushButton#okButton {{
                 background-color: #111111;
                 color: white;
@@ -137,8 +133,7 @@ class WhiteMessageBox(QDialog):
             QPushButton#okButton:pressed {{
                 background-color: #000000;
             }}
-        """
-        )
+        """)
         btn_ok.clicked.connect(self.accept)
 
         btn_layout = QHBoxLayout()
@@ -303,7 +298,7 @@ class MainMenu(QWidget):
         self.corner = CornerWidget(
             top_right_text="ПРОЕКТНАЯ РАБОТА — 2026",
             show_bottom=True,
-            bottom_left_text="ВЕРСИЯ 1.0.0",
+            bottom_left_text="ВЕРСИЯ 1.5.7",
             bottom_right_text="ГОТОВО К РАБОТЕ!",
         )
         main_layout.addWidget(self.corner)
@@ -394,33 +389,227 @@ class MainMenu(QWidget):
 class AboutPage(QWidget):
     def __init__(self, app):
         super().__init__()
+
         self.app = app
+        scale = get_scale(self.screen().size())
 
-        layout = QVBoxLayout(self)
-        layout.setSpacing(20)
+        self.setAttribute(Qt.WA_TranslucentBackground)  # Делает фон виджета прозрачным
+        self.setStyleSheet("background-color: transparent;")
 
-        title = QLabel("О ПРОГРАММЕ")
-        title.setObjectName("title")
-        layout.addWidget(title)
+        # ---------------- MAIN ----------------
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(0)
 
-        text = QLabel(
-            "Программа предназначена для решения задачи.\n"
-            "Позволяет вводить параметры и получать результат."
+        # верхняя панель
+        self.corner = CornerWidget(
+            top_right_text="О ПРОГРАММЕ",
+            show_bottom=False,
         )
-        text.setWordWrap(True)
-        layout.addWidget(text)
+        main_layout.addWidget(self.corner)
 
-        authors = QLabel(
-            "ОБ АВТОРАХ\n\nПономарев, занимался решением задачи и внедрением алгоритма в программу\nБехтерев, рисовал график и дорабатывал остальной код\nШишак, занимался дизайном программы"
+        # ---------------- SCROLL AREA ----------------
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setFrameShape(QFrame.NoFrame)
+
+        scroll.setStyleSheet("""
+            QScrollArea {
+                background: transparent;
+                border: none;
+            }
+
+            QScrollBar:vertical {
+                background: transparent;
+                width: 10px;
+                margin: 0px;
+            }
+
+            QScrollBar::handle:vertical {
+                background: transparent;
+                border-radius: 5px;
+                min-height: 40px;
+            }
+
+            QScrollBar::add-line:vertical,
+            QScrollBar::sub-line:vertical {
+                height: 0px;
+                background: transparent;
+            }
+        """)
+
+        main_layout.addWidget(scroll)
+
+        # ---------------- CONTENT ----------------
+        content = QWidget()
+        scroll.setWidget(content)
+
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(
+            int(90 * scale), int(40 * scale), int(90 * scale), int(40 * scale)
         )
+        layout.setSpacing(int(35 * scale))
+
+        # =========================================================
+        #                         TITLE 1
+        # =========================================================
+
+        title_1 = QLabel("О ПРОГРАММЕ")
+        title_1.setStyleSheet(f"""
+            QLabel {{
+                font-size: {72 * scale}px;
+                font-family: Gerhaus;
+                color: #111111;
+            }}
+        """)
+
+        layout.addWidget(title_1)
+
+        # =========================================================
+        #                         TEXT 1
+        # =========================================================
+
+        text_1 = QLabel("""
+ДАННАЯ ПРОГРАММА РАЗРАБОТАНА В РАМКАХ ПРОЕКТНОЙ РАБОТЫ
+И ПРЕДНАЗНАЧЕНА ДЛЯ РЕШЕНИЯ ЗАДАЧИ ПО ТЕОРЕТИЧЕСКОЙ
+МЕХАНИКЕ. ПРИЛОЖЕНИЕ ПОЗВОЛЯЕТ ВИЗУАЛИЗИРОВАТЬ
+РАСЧЕТНУЮ СХЕМУ, ВВОДИТЬ ИСХОДНЫЕ ПАРАМЕТРЫ И
+ВЫПОЛНЯТЬ АВТОМАТИЧЕСКИЙ РАСЧЕТ ИСКОМЫХ ВЕЛИЧИН НА
+ОСНОВЕ ЗАДАННЫХ МАТЕМАТИЧЕСКИХ ЗАВИСИМОСТЕЙ.
+
+ПРОГРАММА ПРЕДОСТАВЛЯЕТ УДОБНЫЙ ГРАФИЧЕСКИЙ ИНТЕРФЕЙС
+ДЛЯ РАБОТЫ С ЗАДАЧЕЙ, ПОЗВОЛЯЯ ИЗМЕНЯТЬ ЗНАЧЕНИЯ
+ПЕРЕМЕННЫХ И ПОЛУЧАТЬ РЕЗУЛЬТАТЫ ВЫЧИСЛЕНИЙ.
+        """)
+
+        text_1.setWordWrap(True)
+
+        text_1.setStyleSheet(f"""
+            QLabel {{
+                font-size: {24 * scale}px;
+                font-family: Sergio Pro;
+                color: #111111;
+                line-height: 120%;
+            }}
+        """)
+
+        layout.addWidget(text_1)
+
+        # =========================================================
+        #                         TITLE 2
+        # =========================================================
+
+        title_2 = QLabel("ОБ АВТОРАХ")
+
+        title_2.setStyleSheet(f"""
+            QLabel {{
+                font-size: {72 * scale}px;
+                font-family: Gerhaus;
+                color: #111111;
+            }}
+        """)
+
+        layout.addWidget(title_2)
+
+        # =========================================================
+        #                       AUTHORS
+        # =========================================================
+
+        authors = QLabel("""
+ШИШАК ТИХОН — РАЗРАБОТКА ИНТЕРФЕЙСА ПРОГРАММЫ И
+ПРОЕКТИРОВАНИЕ СТРУКТУРЫ ПРИЛОЖЕНИЯ.
+
+
+БЕХТЕРЕВ ДАНИИЛ — РАЗРАБОТКА ПРОГРАММНОГО КОДА И
+РЕАЛИЗАЦИЯ АЛГОРИТМОВ ВЫЧИСЛЕНИЙ.
+
+
+ПОНОМАРЕВ ВАДИМ — РЕШЕНИЕ РАСЧЕТНОЙ ЗАДАЧИ, УЧАСТИЕ
+В РАЗРАБОТКЕ АЛГОРИТМА И ПОМОЩЬ В РЕАЛИЗАЦИИ
+ПРОГРАММНОГО КОДА.
+        """)
+
+        authors.setWordWrap(True)
+
+        authors.setStyleSheet(f"""
+            QLabel {{
+                font-size: {24 * scale}px;
+                font-family: Sergio Pro;
+                color: #111111;
+                line-height: 120%;
+            }}
+        """)
+
         layout.addWidget(authors)
+
+        # =========================================================
+        #                       STRETCH
+        # =========================================================
 
         layout.addStretch()
 
-        back = QPushButton("НАЗАД")
-        layout.addWidget(back, alignment=Qt.AlignRight)
+        # =========================================================
+        #                       FOOTER
+        # =========================================================
 
-        back.clicked.connect(lambda: self.app.go(0))
+        footer = QLabel("РАЗРАБОТКА ВЫПОЛНЕНА В РАМКАХ УЧЕБНОГО ПРОЕКТА, 2026 ГОД.")
+
+        footer.setStyleSheet(f"""
+            QLabel {{
+                font-size: {18 * scale}px;
+                font-family: Sergio Pro;
+                color: #111111;
+            }}
+        """)
+
+        layout.addWidget(footer)
+
+        # =========================================================
+        #                       BACK BUTTON
+        # =========================================================
+
+        self.back = QPushButton("НАЗАД")
+        self.back.setObjectName("secondaryButton")
+
+        generate_adaptive_qss(
+            self.back,
+            base_size=(200, 47),
+            base_font=15,
+            base_padding=(8, 20),
+            base_border_radius=14,
+            base_border_width=3,
+            border_color="#111111",
+            enlarge_on_hover=True,
+        )
+
+        self.back.clicked.connect(lambda: self.app.go(0))
+
+        # ---------------- floating button ----------------
+
+        self.back_container = QWidget(self)
+        self.back_container.setStyleSheet("background: transparent;")
+
+        btn_layout = QHBoxLayout(self.back_container)
+        btn_layout.setContentsMargins(50, 50, 50, 50)
+
+        btn_layout.addStretch()
+        btn_layout.addWidget(self.back)
+
+        self.back_container.resize(int(260 * scale), int(100 * scale))
+
+    # =========================================================
+    #                       RESIZE
+    # =========================================================
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+
+        scale = get_scale(self.screen().size())
+
+        self.back_container.move(
+            self.width() - int(260 * scale), self.height() - int(120 * scale)
+        )
 
 
 # ---------------- ГРАФИК ----------------
@@ -540,20 +729,20 @@ class HintDialog(QDialog):
         self.card = QWidget(self)
         self.card.setObjectName("card")
         # Делаем карточку адаптивной по высоте, если текста много
-        self.card.setFixedWidth(550 * scale) 
-        
+        self.card.setFixedWidth(550 * scale)
+
         card_layout = QVBoxLayout(self.card)
         card_layout.setContentsMargins(40 * scale, 40 * scale, 40 * scale, 40 * scale)
         card_layout.setSpacing(15 * scale)
 
-        text_layout = QVBoxLayout() # Исправлено: layout для текста внутри карточки
+        text_layout = QVBoxLayout()  # Исправлено: layout для текста внутри карточки
         text_layout.setContentsMargins(0, 0, 0, 0)
         text_layout.setSpacing(15 * scale)
 
         # заголовок
         title = QLabel("ПОДСКАЗКА")
         title.setObjectName("title")
-        title.setAlignment(Qt.AlignCenter)
+        #title.setAlignment(Qt.AlignCenter)
 
         # текст подсказки
         text = QLabel(hint_text if hint_text else "Загрузка...")
@@ -578,38 +767,23 @@ class HintDialog(QDialog):
         )
         close_btn.clicked.connect(self.close)
 
-        # кнопка "Понятно" или "Закрыть" внизу
-        btn_close_bottom = QPushButton("ЗАКРЫТЬ")
-        btn_close_bottom.setObjectName("help_btn")
-        generate_adaptive_qss(
-            btn_close_bottom,
-            base_size=(200, 47),
-            base_font=15,
-            base_padding=(6, 6),
-            base_border_radius=14,
-            base_border_width=3,
-            border_color="#F3F3F3",
-            hover_scale=1.25,
-            enlarge_on_hover=True,
-        )
-        btn_close_bottom.clicked.connect(self.close)
+        
 
         # Сборка карточки
         card_layout.addWidget(close_btn, alignment=Qt.AlignRight)
         card_layout.addWidget(title)
-        card_layout.addLayout(text_layout) # Добавляем лейаут с текстом
-        
+        card_layout.addLayout(text_layout)  # Добавляем лейаут с текстом
+
         # Важно: добавляем сам текст в лейаут
         text_layout.addWidget(text)
-        
+
         card_layout.addStretch()
-        card_layout.addWidget(btn_close_bottom, alignment=Qt.AlignCenter)
+        
 
         layout.addWidget(self.card, alignment=Qt.AlignCenter)
 
         # стиль
-        self.setStyleSheet(
-            f"""
+        self.setStyleSheet(f"""
             QDialog {{
                 background-color: rgba(0, 0, 0, 180); 
             }}
@@ -634,8 +808,7 @@ class HintDialog(QDialog):
                 color: white;
                 line-height: 1.5;
             }}
-        """
-        )
+        """)
 
         # для перетаскивания
         self.drag_pos = None
@@ -862,7 +1035,7 @@ class input_panel(CastomPanel):
         layout = QVBoxLayout(self)
         layout.setSpacing(ceil(5 * scale))
         layout.setContentsMargins(
-            ceil(10 * scale), ceil(10 * scale), ceil(10 * scale), ceil(10 * scale)
+            ceil(10 * scale), ceil(10 * scale), ceil(10 * scale), ceil(17 * scale)
         )
 
         self.sliders = {}
@@ -1208,7 +1381,6 @@ class SolverPage(QWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        
         self.corner = CornerWidget(
             top_right_text="РЕШЕНИЕ ЗАДАЧИ",
             show_bottom=False,
@@ -1222,11 +1394,9 @@ class SolverPage(QWidget):
 
         # Лейаут всего внутри overlay
         all_layout = QHBoxLayout(self.all_overlay)
-        #all_layout.setAlignment(Qt.AlignCenter)
-        all_layout.setContentsMargins(20*scale, 70*scale, 20*scale, 15*scale)
-        all_layout.setSpacing(20*scale)
-
-
+        # all_layout.setAlignment(Qt.AlignCenter)
+        all_layout.setContentsMargins(20 * scale, 70 * scale, 20 * scale, 15 * scale)
+        all_layout.setSpacing(20 * scale)
 
         # 1. Создаем главный вертикальный лейаут для всего содержимого
         main_content_layout = QVBoxLayout(self.all_overlay)
@@ -1264,8 +1434,6 @@ class SolverPage(QWidget):
         }}
         """
         self.task_label.setStyleSheet(task_style)
-
-        
 
         # 3. Создаем горизонтальный контейнер для панелей и графика (чтобы они были рядом)
         panels_layout = QHBoxLayout()
@@ -1312,7 +1480,6 @@ class SolverPage(QWidget):
         self.graph = GraphWidget()
         self.graph.setMinimumHeight(250 * scale)
         right_layout_inner.addWidget(self.graph)
-
 
         # Кнопки
         btns_layout = QVBoxLayout()
@@ -1388,13 +1555,12 @@ class SolverPage(QWidget):
         self.overlay.raise_()
 
     def show_hint(self):
-    # Текст подсказки
+        # Текст подсказки
         hint_content = (
             "<b>1. Геометрия треугольника:</b><br>"
             "- Найди гипотенузу OB: √(OA² + AB²).<br>"
             "- Центр тяжести (ЦТ) однородного треугольника находится на расстоянии 1/3 от катетов.<br>"
             "- Плечо силы P относительно точки O равно половине гипотенузы (так как сила приложена в середине и перпендикулярна ей? Уточни условие OD=BD).<br><br>"
-            
             "<b>2. Механика (Статика):</b><br>"
             "- <b>Шарнир O:</b> дает две реакции X₀ и Y₀.<br>"
             "- <b>Гладкая опора C:</b> дает реакцию Yc, направленную перпендикулярно поверхности (вверх).<br>"
@@ -1403,7 +1569,7 @@ class SolverPage(QWidget):
             "  2. ΣFy = 0 (проекция на ось Y)<br>"
             "  3. ΣMo = 0 (сумма моментов относительно точки O). Это самое важное уравнение, так как оно позволяет найти Yc, не зная реакций в шарнире."
         )
-        
+
         dialog = HintDialog(hint_content)
         dialog.exec()
 
