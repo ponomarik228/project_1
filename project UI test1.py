@@ -1043,7 +1043,7 @@ class input_panel(CastomPanel):
         label_dict2 = {"AB": "см", "OA": "см", "OC": "см"}
 
         for key in label_dict1:
-            slider = Slider(label_dict1[key], key, min_value=0)  # создаём
+            slider = Slider(label_dict1[key], key, min_value=1)  # создаём
             self.sliders[key] = slider  # сохраняем
             layout.addWidget(slider)
             layout.setSpacing(ceil(-20 * scale))
@@ -1581,11 +1581,11 @@ class SolverPage(QWidget):
         """Проверяет корректность введённых значений"""
         try:
             side_oc = float(self.input_panel.get_value("OC"))
-            side_ab = float(self.input_panel.get_value("AB"))
+            side_oa = float(self.input_panel.get_value("OA"))  # Берем OA вместо AB
 
-            # Правило: OC должно быть меньше AB
-            if side_oc >= side_ab:
-                return False, "СТОРОНА OC ДОЛЖНА БЫТЬ МЕНЬШЕ СТОРОНЫ AB"
+            # Правило: OC должно быть меньше OA
+            if side_oc >= side_oa:
+                return False, "СТОРОНА OC ДОЛЖНА БЫТЬ МЕНЬШЕ СТОРОНЫ OA"
 
             return True, ""
         except Exception as e:
