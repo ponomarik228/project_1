@@ -51,103 +51,6 @@ from random import randint, random
 from math import ceil
 
 
-class WhiteMessageBox(QDialog):
-    def __init__(self, parent, title, text, icon_type="info"):
-        super().__init__(parent)
-        self.setWindowTitle(title)
-        # Убираем стандартную рамку окна, чтобы сделать свою
-        self.setWindowFlags(Qt.Dialog | Qt.FramelessWindowHint)
-        self.setAttribute(Qt.WA_TranslucentBackground)
-
-        scale = get_scale(self.screen().size())
-
-        # Основной лейаут
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-
-        # Белая карточка
-        self.card = QFrame()
-        self.card.setObjectName("whiteCard")
-        self.card.setStyleSheet(f"""
-            QFrame#whiteCard {{
-                background-color: #ffffff;
-                border: 2px solid #111111;
-                border-radius: {15 * scale}px;
-            }}
-        """)
-
-        card_layout = QVBoxLayout(self.card)
-        card_layout.setContentsMargins(25 * scale, 25 * scale, 25 * scale, 25 * scale)
-        card_layout.setSpacing(15 * scale)
-
-        # Заголовок и текст
-        content_layout = QHBoxLayout()
-
-        # Иконка (эмодзи или символ)
-        icon_label = QLabel()
-        icon_label.setAlignment(Qt.AlignTop)
-        if icon_type == "info":
-            icon_label.setText("ℹ️")
-        elif icon_type == "critical":
-            icon_label.setText("ℹ️")
-        elif icon_type == "warning":
-            icon_label.setText("⚠️")
-        else:
-            icon_label.setText("💬")
-
-        icon_label.setStyleSheet(f"font-size: {30 * scale}px;")
-
-        # Текст сообщения
-        text_label = QLabel(text)
-        text_label.setWordWrap(True)
-        text_label.setStyleSheet(f"""
-            color: #111111;
-            font-size: {16 * scale}px;
-            font-family: "Segoe Pro", sans-serif;
-            font-weight: normal;
-        """)
-
-        content_layout.addWidget(icon_label)
-        content_layout.addWidget(text_label)
-        content_layout.setSpacing(15 * scale)
-
-        card_layout.addLayout(content_layout)
-
-        # Кнопка OK
-        btn_ok = QPushButton("OK")
-        btn_ok.setObjectName("okButton")
-        btn_ok.setFixedSize(100 * scale, 40 * scale)
-        btn_ok.setStyleSheet(f"""
-            QPushButton#okButton {{
-                background-color: #111111;
-                color: white;
-                border: none;
-                border-radius: {8 * scale}px;
-                font-weight: bold;
-                font-family: "Gerhaus", sans-serif;
-                font-size: {14 * scale}px;
-            }}
-            QPushButton#okButton:hover {{
-                background-color: #333333;
-            }}
-            QPushButton#okButton:pressed {{
-                background-color: #000000;
-            }}
-        """)
-        btn_ok.clicked.connect(self.accept)
-
-        btn_layout = QHBoxLayout()
-        btn_layout.addStretch()
-        btn_layout.addWidget(btn_ok)
-
-        card_layout.addLayout(btn_layout)
-
-        main_layout.addWidget(self.card)
-
-        # Фиксируем размер (примерно)
-        self.setMinimumWidth(400 * scale)
-        self.adjustSize()
-
 
 # ---------------- РАЗМЕР ЭКРАНА ----------------
 def get_scale(screen_size, base_resolution=(1280, 720)):
@@ -220,6 +123,271 @@ def generate_adaptive_qss(
 
     button.setStyleSheet(qss)
 
+
+class WhiteMessageBox(QDialog):
+    def __init__(self, parent=None, title="ПОДСКАЗКА", text="Попробуйте составить сумму моментов относительно точки O.", correct_answer=None):
+        super().__init__(parent)
+
+        scale = get_scale(self.screen().size())
+
+        # =========================================================
+        # WINDOW
+        # =========================================================
+
+        self.setWindowFlags(
+            Qt.Dialog |
+            Qt.FramelessWindowHint
+        )
+
+        self.setAttribute(Qt.WA_TranslucentBackground)
+
+        self.resize(
+            int(520 * scale),
+            int(280 * scale)
+        )
+
+        # =========================================================
+        # ROOT LAYOUT
+        # =========================================================
+
+        root = QVBoxLayout(self)
+        root.setContentsMargins(
+            int(20 * scale),
+            int(20 * scale),
+            int(20 * scale),
+            int(20 * scale)
+        )
+
+        # =========================================================
+        # CARD
+        # =========================================================
+
+        self.card = QFrame()
+        self.card.setObjectName("hintCard")
+
+        root.addWidget(self.card)
+
+        # =========================================================
+        # CARD LAYOUT
+        # =========================================================
+
+        layout = QVBoxLayout(self.card)
+
+        layout.setContentsMargins(
+            int(25 * scale),
+            int(20 * scale),
+            int(25 * scale),
+            int(20 * scale)
+        )
+
+        layout.setSpacing(int(15 * scale))
+
+        # =========================================================
+        # HEADER
+        # =========================================================
+
+        header = QHBoxLayout()
+
+        self.title_label = QLabel(title)
+        self.title_label.setObjectName("hintTitle")
+
+        header.addWidget(self.title_label)
+
+        header.addStretch()
+
+        # =========================================================
+        # CLOSE BUTTON
+        # =========================================================
+
+        self.close_btn = QPushButton("X")
+        self.close_btn.setCursor(Qt.PointingHandCursor)
+        self.close_btn.setObjectName("help_btn")
+
+        generate_adaptive_qss(
+            self.close_btn,
+            base_size=(36, 36),
+            base_font=12,
+            base_padding=(1, 1),
+            base_border_radius=18,
+            base_border_width=3,
+            border_color="#F3F3F3",
+            hover_scale=1.22,
+            enlarge_on_hover=True,
+        )
+
+
+        self.close_btn.clicked.connect(self.close)
+
+        header.addWidget(self.close_btn)
+
+        layout.addLayout(header)
+
+        # =========================================================
+        # TEXT
+        # =========================================================
+
+        self.text_label = QLabel(text)
+
+        self.text_label.setObjectName("hintText")
+
+        self.text_label.setWordWrap(True)
+
+        self.text_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+
+        layout.addWidget(self.text_label)
+
+
+        layout.addStretch()
+
+        # =========================================================
+        # BUTTONS
+        # =========================================================
+
+        btn_layout = QHBoxLayout()
+
+        # === ПРАВИЛЬНЫЙ ОТВЕТ (спойлер в стиле Telegram) ===
+        if correct_answer is not None:
+            self.answer_revealed = False
+            self.answer_btn = QPushButton(correct_answer)
+            self.answer_btn.setObjectName("correctAnswer")
+            self.answer_btn.setCursor(Qt.PointingHandCursor)
+            self.answer_btn.setFlat(True)  # убираем фон и рамку кнопки
+            self.answer_btn.setStyleSheet(f"""
+                QPushButton#correctAnswer {{
+                    color: rgba(255, 255, 255, 0.11);  /* "размытый" вид */
+                    font-size: {8 * scale}px;            /* ещё меньше */
+                    font-family: "Segoe Pro";
+                    font-style: italic;
+                    text-align: left;
+                    padding: 0;
+                    margin-right: {10 * scale}px;
+                }}
+                QPushButton#correctAnswer:hover {{
+                    color: rgba(255, 255, 255, 0.45);  /* подсветка при наведении */
+                }}
+            """)
+        self.answer_btn.clicked.connect(self._toggle_answer)
+        btn_layout.addWidget(self.answer_btn)
+        btn_layout.addSpacing(int(12 * scale))
+
+        btn_layout.addStretch()
+
+        self.ok_btn = QPushButton("OK")
+
+        self.ok_btn.setCursor(Qt.PointingHandCursor)
+        self.ok_btn.setObjectName("help_btn")
+
+        generate_adaptive_qss(
+            self.ok_btn,
+            base_size=(120, 42),
+            base_font=15,
+            base_padding=(1, 1),
+            base_border_radius=18,
+            base_border_width=3,
+            border_color="#F3F3F3",
+            hover_scale=1.22,
+            enlarge_on_hover=True,
+        )
+
+        self.ok_btn.clicked.connect(self.accept)
+
+        btn_layout.addWidget(self.ok_btn)
+
+        layout.addLayout(btn_layout)
+
+        # =========================================================
+        # STYLE
+        # =========================================================
+
+        self.setStyleSheet(f"""
+
+        QDialog {{
+            background: rgba(0, 0, 0, 140);
+        }}
+
+        QFrame#hintCard {{
+            background: #111111;
+            border-radius: {20 * scale}px;
+        }}
+
+        QLabel#hintTitle {{
+            color: white;
+            font-size: {30 * scale}px;
+            font-family: Gerhaus;
+            font-weight: bold;
+        }}
+
+        QLabel#hintText {{
+            color: white;
+            font-size: {16 * scale}px;
+            font-family: "Segoe Pro";
+            line-height: 1.4;
+        }}
+
+        QLabel#correctAnswer {{
+            color: rgba(255, 255, 255, 0.7);
+            font-size: {11 * scale}px;
+            font-family: "Segoe Pro";
+            margin-top: {8 * scale}px;
+            font-style: italic;
+        }}
+
+        """)
+
+        # =========================================================
+        # DRAG
+        # =========================================================
+
+        self.old_pos = None
+
+    # =============================================================
+    # MOVE WINDOW
+    # =============================================================
+
+    def mousePressEvent(self, event):
+
+        if event.button() == Qt.LeftButton:
+            self.old_pos = event.globalPosition().toPoint()
+
+    def mouseMoveEvent(self, event):
+
+        if self.old_pos:
+
+            delta = (
+                event.globalPosition().toPoint()
+                - self.old_pos
+            )
+
+            self.move(
+                self.x() + delta.x(),
+                self.y() + delta.y()
+            )
+
+            self.old_pos = event.globalPosition().toPoint()
+
+    def mouseReleaseEvent(self, event):
+
+        self.old_pos = None
+
+    def _toggle_answer(self):
+        """Переключает видимость ответа (спойлер)"""
+        self.answer_revealed = not self.answer_revealed
+        alpha = 0.85 if self.answer_revealed else 0.11
+        hover_alpha = 0.95 if self.answer_revealed else 0.45
+        
+        self.answer_btn.setStyleSheet(f"""
+            QPushButton#correctAnswer {{
+                color: rgba(255, 255, 255, {alpha});
+                font-size: {8 * self.scale}px;
+                font-family: "Segoe Pro";
+                font-style: italic;
+                text-align: left;
+                padding: 0;
+            }}
+            QPushButton#correctAnswer:hover {{
+                color: rgba(255, 255, 255, {hover_alpha});
+            }}
+        """)
 
 # ---------------- ТЕКСТ - ХУД ----------------
 def create_corner_label(text, scale, size):
@@ -736,13 +904,13 @@ class HintDialog(QDialog):
         card_layout.setSpacing(15 * scale)
 
         text_layout = QVBoxLayout()  # Исправлено: layout для текста внутри карточки
-        text_layout.setContentsMargins(0, 0, 0, 0)
+        text_layout.setContentsMargins(15, 0, 0, 15*scale)
         text_layout.setSpacing(15 * scale)
 
         # заголовок
         title = QLabel("ПОДСКАЗКА")
         title.setObjectName("title")
-        #title.setAlignment(Qt.AlignCenter)
+        title.setAlignment(Qt.AlignLeft)
 
         # текст подсказки
         text = QLabel(hint_text if hint_text else "Загрузка...")
@@ -795,7 +963,7 @@ class HintDialog(QDialog):
             }}
 
             QLabel#title {{
-                font-size: {40*scale}px; /* Чуть уменьшил, чтобы влезало */
+                font-size: {60*scale}px; /* Чуть уменьшил, чтобы влезало */
                 font-family: Gerhaus;
                 color: white;
                 font-weight: bold;
@@ -1121,8 +1289,8 @@ class input_panel(CastomPanel):
         for key in self.sliders:
             self.set_value(key, randint(1, 100))
 
-        if self.get_value("OC") > self.get_value("AB"):
-            new_value = self.get_value("AB") - 1
+        if self.get_value("OC") > self.get_value("OA"):
+            new_value = self.get_value("OA") - 1
             self.set_value("OC", max(1, new_value))
 
 
@@ -1326,8 +1494,7 @@ class result_panel(CastomPanel):
                 dlg = WhiteMessageBox(
                     self,
                     "Результат",
-                    "✅ ВЕРНО! Все реакции найдены правильно.",
-                    "info",
+                    "ВЕРНО! Все реакции найдены правильно."
                 )
                 dlg.exec()
             else:
@@ -1339,13 +1506,25 @@ class result_panel(CastomPanel):
                 if not is_yc_correct:
                     errors.append("Y_C")
 
-                msg = f"❌ НЕВЕРНО.\nОшибки в параметрах: {', '.join(errors)}\n\nПопробуйте пересчитать."
-                dlg = WhiteMessageBox(self, "Результат", msg, "critical")
+                msg = f"НЕВЕРНО.\nОшибки в параметрах: {', '.join(errors)}\n\nПопробуйте пересчитать."
+
+                # Формируем строку с правильными значениями
+                correct_values = []
+                if "X_0" in errors:
+                    correct_values.append(f"X₀ = {correct_x0:.2f}")
+                if "Y_0" in errors:
+                    correct_values.append(f"Y₀ = {correct_y0:.2f}")
+                if "Y_C" in errors:
+                    correct_values.append(f"Yc = {correct_yc:.2f}")
+
+                answer_text = " | ".join(correct_values) if correct_values else ""
+
+                dlg = WhiteMessageBox(self, "Результат", msg, correct_answer=answer_text)
                 dlg.exec()
 
         except Exception as e:
             dlg = WhiteMessageBox(
-                self, "Ошибка", f"Произошла ошибка: {str(e)}", "critical"
+                self, "Ошибка", f"Произошла ошибка: {str(e)}"
             )
             dlg.exec()
 
