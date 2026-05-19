@@ -1,13 +1,3 @@
-"""
-ПЛАН ТОЛЬКО ДЛЯ ТИХОНА!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-НЕ ЛЕЗЬТЕ, СУКИ!!!!!!!!!!!!!!!!!
-
-1. +++
-2. Сделать об авторах, доделать подсказку, адаптировать ее
-3. Сделать "посмотреть решение"
-Пошел нахуй
-"""
-
 import matplotlib.pyplot as plt
 import numpy as np
 import io
@@ -29,6 +19,7 @@ from PySide6.QtWidgets import (
     QGraphicsDropShadowEffect,
     QStyleOptionSlider,
     QMessageBox,
+    QScrollArea,
 )
 from PySide6.QtCore import (
     Qt,
@@ -58,6 +49,7 @@ import sys
 import os
 from random import randint, random
 from math import ceil
+
 
 
 # ---------------- РАЗМЕР ЭКРАНА ----------------
@@ -131,6 +123,271 @@ def generate_adaptive_qss(
 
     button.setStyleSheet(qss)
 
+
+class WhiteMessageBox(QDialog):
+    def __init__(self, parent=None, title="ПОДСКАЗКА", text="Попробуйте составить сумму моментов относительно точки O.", correct_answer=None):
+        super().__init__(parent)
+
+        scale = get_scale(self.screen().size())
+
+        # =========================================================
+        # WINDOW
+        # =========================================================
+
+        self.setWindowFlags(
+            Qt.Dialog |
+            Qt.FramelessWindowHint
+        )
+
+        self.setAttribute(Qt.WA_TranslucentBackground)
+
+        self.resize(
+            int(520 * scale),
+            int(280 * scale)
+        )
+
+        # =========================================================
+        # ROOT LAYOUT
+        # =========================================================
+
+        root = QVBoxLayout(self)
+        root.setContentsMargins(
+            int(20 * scale),
+            int(20 * scale),
+            int(20 * scale),
+            int(20 * scale)
+        )
+
+        # =========================================================
+        # CARD
+        # =========================================================
+
+        self.card = QFrame()
+        self.card.setObjectName("hintCard")
+
+        root.addWidget(self.card)
+
+        # =========================================================
+        # CARD LAYOUT
+        # =========================================================
+
+        layout = QVBoxLayout(self.card)
+
+        layout.setContentsMargins(
+            int(25 * scale),
+            int(20 * scale),
+            int(25 * scale),
+            int(20 * scale)
+        )
+
+        layout.setSpacing(int(15 * scale))
+
+        # =========================================================
+        # HEADER
+        # =========================================================
+
+        header = QHBoxLayout()
+
+        self.title_label = QLabel(title)
+        self.title_label.setObjectName("hintTitle")
+
+        header.addWidget(self.title_label)
+
+        header.addStretch()
+
+        # =========================================================
+        # CLOSE BUTTON
+        # =========================================================
+
+        self.close_btn = QPushButton("X")
+        self.close_btn.setCursor(Qt.PointingHandCursor)
+        self.close_btn.setObjectName("help_btn")
+
+        generate_adaptive_qss(
+            self.close_btn,
+            base_size=(36, 36),
+            base_font=12,
+            base_padding=(1, 1),
+            base_border_radius=18,
+            base_border_width=3,
+            border_color="#F3F3F3",
+            hover_scale=1.22,
+            enlarge_on_hover=True,
+        )
+
+
+        self.close_btn.clicked.connect(self.close)
+
+        header.addWidget(self.close_btn)
+
+        layout.addLayout(header)
+
+        # =========================================================
+        # TEXT
+        # =========================================================
+
+        self.text_label = QLabel(text)
+
+        self.text_label.setObjectName("hintText")
+
+        self.text_label.setWordWrap(True)
+
+        self.text_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+
+        layout.addWidget(self.text_label)
+
+
+        layout.addStretch()
+
+        # =========================================================
+        # BUTTONS
+        # =========================================================
+
+        btn_layout = QHBoxLayout()
+
+        # === ПРАВИЛЬНЫЙ ОТВЕТ (спойлер в стиле Telegram) ===
+        if correct_answer is not None:
+            self.answer_revealed = False
+            self.answer_btn = QPushButton(correct_answer)
+            self.answer_btn.setObjectName("correctAnswer")
+            self.answer_btn.setCursor(Qt.PointingHandCursor)
+            self.answer_btn.setFlat(True)  # убираем фон и рамку кнопки
+            self.answer_btn.setStyleSheet(f"""
+                QPushButton#correctAnswer {{
+                    color: rgba(255, 255, 255, 0.11);  /* "размытый" вид */
+                    font-size: {8 * scale}px;            /* ещё меньше */
+                    font-family: "Segoe Pro";
+                    font-style: italic;
+                    text-align: left;
+                    padding: 0;
+                    margin-right: {10 * scale}px;
+                }}
+                QPushButton#correctAnswer:hover {{
+                    color: rgba(255, 255, 255, 0.45);  /* подсветка при наведении */
+                }}
+            """)
+        self.answer_btn.clicked.connect(self._toggle_answer)
+        btn_layout.addWidget(self.answer_btn)
+        btn_layout.addSpacing(int(12 * scale))
+
+        btn_layout.addStretch()
+
+        self.ok_btn = QPushButton("OK")
+
+        self.ok_btn.setCursor(Qt.PointingHandCursor)
+        self.ok_btn.setObjectName("help_btn")
+
+        generate_adaptive_qss(
+            self.ok_btn,
+            base_size=(120, 42),
+            base_font=15,
+            base_padding=(1, 1),
+            base_border_radius=18,
+            base_border_width=3,
+            border_color="#F3F3F3",
+            hover_scale=1.22,
+            enlarge_on_hover=True,
+        )
+
+        self.ok_btn.clicked.connect(self.accept)
+
+        btn_layout.addWidget(self.ok_btn)
+
+        layout.addLayout(btn_layout)
+
+        # =========================================================
+        # STYLE
+        # =========================================================
+
+        self.setStyleSheet(f"""
+
+        QDialog {{
+            background: rgba(0, 0, 0, 140);
+        }}
+
+        QFrame#hintCard {{
+            background: #111111;
+            border-radius: {20 * scale}px;
+        }}
+
+        QLabel#hintTitle {{
+            color: white;
+            font-size: {30 * scale}px;
+            font-family: Gerhaus;
+            font-weight: bold;
+        }}
+
+        QLabel#hintText {{
+            color: white;
+            font-size: {16 * scale}px;
+            font-family: "Segoe Pro";
+            line-height: 1.4;
+        }}
+
+        QLabel#correctAnswer {{
+            color: rgba(255, 255, 255, 0.7);
+            font-size: {11 * scale}px;
+            font-family: "Segoe Pro";
+            margin-top: {8 * scale}px;
+            font-style: italic;
+        }}
+
+        """)
+
+        # =========================================================
+        # DRAG
+        # =========================================================
+
+        self.old_pos = None
+
+    # =============================================================
+    # MOVE WINDOW
+    # =============================================================
+
+    def mousePressEvent(self, event):
+
+        if event.button() == Qt.LeftButton:
+            self.old_pos = event.globalPosition().toPoint()
+
+    def mouseMoveEvent(self, event):
+
+        if self.old_pos:
+
+            delta = (
+                event.globalPosition().toPoint()
+                - self.old_pos
+            )
+
+            self.move(
+                self.x() + delta.x(),
+                self.y() + delta.y()
+            )
+
+            self.old_pos = event.globalPosition().toPoint()
+
+    def mouseReleaseEvent(self, event):
+
+        self.old_pos = None
+
+    def _toggle_answer(self):
+        """Переключает видимость ответа (спойлер)"""
+        self.answer_revealed = not self.answer_revealed
+        alpha = 0.85 if self.answer_revealed else 0.11
+        hover_alpha = 0.95 if self.answer_revealed else 0.45
+        
+        self.answer_btn.setStyleSheet(f"""
+            QPushButton#correctAnswer {{
+                color: rgba(255, 255, 255, {alpha});
+                font-size: {8 * self.scale}px;
+                font-family: "Segoe Pro";
+                font-style: italic;
+                text-align: left;
+                padding: 0;
+            }}
+            QPushButton#correctAnswer:hover {{
+                color: rgba(255, 255, 255, {hover_alpha});
+            }}
+        """)
 
 # ---------------- ТЕКСТ - ХУД ----------------
 def create_corner_label(text, scale, size):
@@ -209,7 +466,7 @@ class MainMenu(QWidget):
         self.corner = CornerWidget(
             top_right_text="ПРОЕКТНАЯ РАБОТА — 2026",
             show_bottom=True,
-            bottom_left_text="ВЕРСИЯ 1.0.0",
+            bottom_left_text="ВЕРСИЯ 1.5.7",
             bottom_right_text="ГОТОВО К РАБОТЕ!",
         )
         main_layout.addWidget(self.corner)
@@ -300,31 +557,227 @@ class MainMenu(QWidget):
 class AboutPage(QWidget):
     def __init__(self, app):
         super().__init__()
+
         self.app = app
+        scale = get_scale(self.screen().size())
 
-        layout = QVBoxLayout(self)
-        layout.setSpacing(10)
+        self.setAttribute(Qt.WA_TranslucentBackground)  # Делает фон виджета прозрачным
+        self.setStyleSheet("background-color: transparent;")
 
-        title = QLabel("О ПРОГРАММЕ")
-        title.setObjectName("title")
-        layout.addWidget(title)
+        # ---------------- MAIN ----------------
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(0)
 
-        text = QLabel(
-            "Программа предназначена для решения задачи.\n"
-            "Позволяет вводить параметры и получать результат."
+        # верхняя панель
+        self.corner = CornerWidget(
+            top_right_text="О ПРОГРАММЕ",
+            show_bottom=False,
         )
-        text.setWordWrap(True)
-        layout.addWidget(text)
+        main_layout.addWidget(self.corner)
 
-        authors = QLabel("ОБ АВТОРАХ\n\nПономарев\nБехтерев\nШишак")
+        # ---------------- SCROLL AREA ----------------
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setFrameShape(QFrame.NoFrame)
+
+        scroll.setStyleSheet("""
+            QScrollArea {
+                background: transparent;
+                border: none;
+            }
+
+            QScrollBar:vertical {
+                background: transparent;
+                width: 10px;
+                margin: 0px;
+            }
+
+            QScrollBar::handle:vertical {
+                background: transparent;
+                border-radius: 5px;
+                min-height: 40px;
+            }
+
+            QScrollBar::add-line:vertical,
+            QScrollBar::sub-line:vertical {
+                height: 0px;
+                background: transparent;
+            }
+        """)
+
+        main_layout.addWidget(scroll)
+
+        # ---------------- CONTENT ----------------
+        content = QWidget()
+        scroll.setWidget(content)
+
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(
+            int(90 * scale), int(40 * scale), int(90 * scale), int(40 * scale)
+        )
+        layout.setSpacing(int(35 * scale))
+
+        # =========================================================
+        #                         TITLE 1
+        # =========================================================
+
+        title_1 = QLabel("О ПРОГРАММЕ")
+        title_1.setStyleSheet(f"""
+            QLabel {{
+                font-size: {72 * scale}px;
+                font-family: Gerhaus;
+                color: #111111;
+            }}
+        """)
+
+        layout.addWidget(title_1)
+
+        # =========================================================
+        #                         TEXT 1
+        # =========================================================
+
+        text_1 = QLabel("""
+ДАННАЯ ПРОГРАММА РАЗРАБОТАНА В РАМКАХ ПРОЕКТНОЙ РАБОТЫ
+И ПРЕДНАЗНАЧЕНА ДЛЯ РЕШЕНИЯ ЗАДАЧИ ПО ТЕОРЕТИЧЕСКОЙ
+МЕХАНИКЕ. ПРИЛОЖЕНИЕ ПОЗВОЛЯЕТ ВИЗУАЛИЗИРОВАТЬ
+РАСЧЕТНУЮ СХЕМУ, ВВОДИТЬ ИСХОДНЫЕ ПАРАМЕТРЫ И
+ВЫПОЛНЯТЬ АВТОМАТИЧЕСКИЙ РАСЧЕТ ИСКОМЫХ ВЕЛИЧИН НА
+ОСНОВЕ ЗАДАННЫХ МАТЕМАТИЧЕСКИХ ЗАВИСИМОСТЕЙ.
+
+ПРОГРАММА ПРЕДОСТАВЛЯЕТ УДОБНЫЙ ГРАФИЧЕСКИЙ ИНТЕРФЕЙС
+ДЛЯ РАБОТЫ С ЗАДАЧЕЙ, ПОЗВОЛЯЯ ИЗМЕНЯТЬ ЗНАЧЕНИЯ
+ПЕРЕМЕННЫХ И ПОЛУЧАТЬ РЕЗУЛЬТАТЫ ВЫЧИСЛЕНИЙ.
+        """)
+
+        text_1.setWordWrap(True)
+
+        text_1.setStyleSheet(f"""
+            QLabel {{
+                font-size: {24 * scale}px;
+                font-family: Sergio Pro;
+                color: #111111;
+                line-height: 120%;
+            }}
+        """)
+
+        layout.addWidget(text_1)
+
+        # =========================================================
+        #                         TITLE 2
+        # =========================================================
+
+        title_2 = QLabel("ОБ АВТОРАХ")
+
+        title_2.setStyleSheet(f"""
+            QLabel {{
+                font-size: {72 * scale}px;
+                font-family: Gerhaus;
+                color: #111111;
+            }}
+        """)
+
+        layout.addWidget(title_2)
+
+        # =========================================================
+        #                       AUTHORS
+        # =========================================================
+
+        authors = QLabel("""
+ШИШАК ТИХОН — РАЗРАБОТКА ИНТЕРФЕЙСА ПРОГРАММЫ И
+ПРОЕКТИРОВАНИЕ СТРУКТУРЫ ПРИЛОЖЕНИЯ.
+
+
+БЕХТЕРЕВ ДАНИИЛ — РАЗРАБОТКА ПРОГРАММНОГО КОДА И
+РЕАЛИЗАЦИЯ АЛГОРИТМОВ ВЫЧИСЛЕНИЙ.
+
+
+ПОНОМАРЕВ ВАДИМ — РЕШЕНИЕ РАСЧЕТНОЙ ЗАДАЧИ, УЧАСТИЕ
+В РАЗРАБОТКЕ АЛГОРИТМА И ПОМОЩЬ В РЕАЛИЗАЦИИ
+ПРОГРАММНОГО КОДА.
+        """)
+
+        authors.setWordWrap(True)
+
+        authors.setStyleSheet(f"""
+            QLabel {{
+                font-size: {24 * scale}px;
+                font-family: Sergio Pro;
+                color: #111111;
+                line-height: 120%;
+            }}
+        """)
+
         layout.addWidget(authors)
+
+        # =========================================================
+        #                       STRETCH
+        # =========================================================
 
         layout.addStretch()
 
-        back = QPushButton("НАЗАД")
-        layout.addWidget(back, alignment=Qt.AlignRight)
+        # =========================================================
+        #                       FOOTER
+        # =========================================================
 
-        back.clicked.connect(lambda: self.app.go(0))
+        footer = QLabel("РАЗРАБОТКА ВЫПОЛНЕНА В РАМКАХ УЧЕБНОГО ПРОЕКТА, 2026 ГОД.")
+
+        footer.setStyleSheet(f"""
+            QLabel {{
+                font-size: {18 * scale}px;
+                font-family: Sergio Pro;
+                color: #111111;
+            }}
+        """)
+
+        layout.addWidget(footer)
+
+        # =========================================================
+        #                       BACK BUTTON
+        # =========================================================
+
+        self.back = QPushButton("НАЗАД")
+        self.back.setObjectName("secondaryButton")
+
+        generate_adaptive_qss(
+            self.back,
+            base_size=(200, 47),
+            base_font=15,
+            base_padding=(8, 20),
+            base_border_radius=14,
+            base_border_width=3,
+            border_color="#111111",
+            enlarge_on_hover=True,
+        )
+
+        self.back.clicked.connect(lambda: self.app.go(0))
+
+        # ---------------- floating button ----------------
+
+        self.back_container = QWidget(self)
+        self.back_container.setStyleSheet("background: transparent;")
+
+        btn_layout = QHBoxLayout(self.back_container)
+        btn_layout.setContentsMargins(50, 50, 50, 50)
+
+        btn_layout.addStretch()
+        btn_layout.addWidget(self.back)
+
+        self.back_container.resize(int(260 * scale), int(100 * scale))
+
+    # =========================================================
+    #                       RESIZE
+    # =========================================================
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+
+        scale = get_scale(self.screen().size())
+
+        self.back_container.move(
+            self.width() - int(260 * scale), self.height() - int(120 * scale)
+        )
 
 
 # ---------------- ГРАФИК ----------------
@@ -425,7 +878,7 @@ class GraphWidget(QWidget):
 
 # ---------------- ПОДСКАЗКА ----------------
 class HintDialog(QDialog):
-    def __init__(self):
+    def __init__(self, hint_text=""):
         super().__init__()
 
         scale = get_scale(self.screen().size())
@@ -436,8 +889,6 @@ class HintDialog(QDialog):
         # прозрачность окна
         self.setAttribute(Qt.WA_TranslucentBackground)
 
-        # self.setFixedSize(500, 650)
-
         # главный layout
         layout = QVBoxLayout(self)
         layout.setContentsMargins(30 * scale, 30 * scale, 30 * scale, 30 * scale)
@@ -445,43 +896,32 @@ class HintDialog(QDialog):
         # --- карточка ---
         self.card = QWidget(self)
         self.card.setObjectName("card")
-        self.card.setFixedSize(550 * scale, 650 * scale)
+        # Делаем карточку адаптивной по высоте, если текста много
+        self.card.setFixedWidth(550 * scale)
 
         card_layout = QVBoxLayout(self.card)
         card_layout.setContentsMargins(40 * scale, 40 * scale, 40 * scale, 40 * scale)
         card_layout.setSpacing(15 * scale)
 
-        text_layout = QVBoxLayout(self)
-        text_layout.setContentsMargins(25 * scale, 0, 25 * scale, 25 * scale)
-        # text_layout.setSpacing(15)
+        text_layout = QVBoxLayout()  # Исправлено: layout для текста внутри карточки
+        text_layout.setContentsMargins(15, 0, 0, 15*scale)
+        text_layout.setSpacing(15 * scale)
 
         # заголовок
         title = QLabel("ПОДСКАЗКА")
         title.setObjectName("title")
+        title.setAlignment(Qt.AlignLeft)
 
-        # текст
-        text = QLabel("В доработке")
+        # текст подсказки
+        text = QLabel(hint_text if hint_text else "Загрузка...")
         text.setWordWrap(True)
         text.setObjectName("text")
+        text.setAlignment(Qt.AlignLeft | Qt.AlignTop)
 
-        # кнопка
-        btn = QPushButton("ПОСМОТРЕТЬ РЕШЕНИЕ")
-        btn.setObjectName("help_btn")
-        generate_adaptive_qss(
-            btn,
-            base_size=(300, 47),
-            base_font=15,
-            base_padding=(6, 6),
-            base_border_radius=14,
-            base_border_width=3,
-            border_color="#F3F3F3",
-            hover_scale=1.25,
-            enlarge_on_hover=True,
-        )
-
-        # крестик
+        # кнопка закрытия (крестик)
         close_btn = QPushButton("X")
         close_btn.setObjectName("help_btn")
+        close_btn.setFixedSize(36 * scale, 36 * scale)
         generate_adaptive_qss(
             close_btn,
             base_size=(36, 36),
@@ -493,58 +933,53 @@ class HintDialog(QDialog):
             hover_scale=1.22,
             enlarge_on_hover=True,
         )
-
         close_btn.clicked.connect(self.close)
 
-        card_layout.addWidget(close_btn, alignment=Qt.AlignRight)
+        
 
-        text_layout.addWidget(title)
+        # Сборка карточки
+        card_layout.addWidget(close_btn, alignment=Qt.AlignRight)
+        card_layout.addWidget(title)
+        card_layout.addLayout(text_layout)  # Добавляем лейаут с текстом
+
+        # Важно: добавляем сам текст в лейаут
         text_layout.addWidget(text)
 
-        card_layout.addLayout(text_layout)
-
         card_layout.addStretch()
-        card_layout.addWidget(btn, alignment=Qt.AlignCenter)
+        
 
         layout.addWidget(self.card, alignment=Qt.AlignCenter)
 
         # стиль
-        self.setStyleSheet(
-            f"""
+        self.setStyleSheet(f"""
             QDialog {{
-                background-color: rgba(0, 0, 0, 180);  /* Полупрозрачное затемнение всего окна */
+                background-color: rgba(0, 0, 0, 180); 
             }}
 
             QWidget#card {{
-                background-color: rgba(0, 0, 0, 235);  /* Тёмный фон карточки */
-                border-radius: {30*scale}px;                        /* Закруглённые углы */
-                margin: {20*scale}px;                             /* Отступ от краёв диалога */
+                background-color: rgba(0, 0, 0, 235); 
+                border-radius: {30*scale}px;                        
+                margin: {20*scale}px;                             
             }}
 
             QLabel#title {{
-                font-size: {60*scale}px;
+                font-size: {60*scale}px; /* Чуть уменьшил, чтобы влезало */
                 font-family: Gerhaus;
                 color: white;
                 font-weight: bold;
+                margin-bottom: 10px;
             }}
 
             QLabel#text {{
-                font-size: {20*scale}px;
+                font-size: {18*scale}px;
                 font-family: Segoe Pro;
                 color: white;
+                line-height: 1.5;
             }}
-        """
-        )
+        """)
 
         # для перетаскивания
         self.drag_pos = None
-
-    # затемнение фона
-    """
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.fillRect(self.rect(), QColor(0, 0, 0, 235))  # затемнение
-    """
 
     # --- перетаскивание ---
     def mousePressEvent(self, event):
@@ -768,7 +1203,7 @@ class input_panel(CastomPanel):
         layout = QVBoxLayout(self)
         layout.setSpacing(ceil(5 * scale))
         layout.setContentsMargins(
-            ceil(10 * scale), ceil(10 * scale), ceil(10 * scale), ceil(10 * scale)
+            ceil(10 * scale), ceil(10 * scale), ceil(10 * scale), ceil(17 * scale)
         )
 
         self.sliders = {}
@@ -776,7 +1211,7 @@ class input_panel(CastomPanel):
         label_dict2 = {"AB": "см", "OA": "см", "OC": "см"}
 
         for key in label_dict1:
-            slider = Slider(label_dict1[key], key, min_value=0)  # создаём
+            slider = Slider(label_dict1[key], key, min_value=1)  # создаём
             self.sliders[key] = slider  # сохраняем
             layout.addWidget(slider)
             layout.setSpacing(ceil(-20 * scale))
@@ -854,8 +1289,8 @@ class input_panel(CastomPanel):
         for key in self.sliders:
             self.set_value(key, randint(1, 100))
 
-        if self.get_value("OC") > self.get_value("AB"):
-            new_value = self.get_value("AB") - 1
+        if self.get_value("OC") > self.get_value("OA"):
+            new_value = self.get_value("OA") - 1
             self.set_value("OC", max(1, new_value))
 
 
@@ -930,6 +1365,13 @@ class answer_panel(QWidget):
         self.setFixedHeight(60 * scale)
         # main_layout.setSpacing(2)
         main_layout.setContentsMargins(28, 0, 0, 3)
+        # Внутри класса answer_panel
+
+    def get_value_ans(self):
+        try:
+            return float(self.input.text())
+        except ValueError:
+            return None
 
 
 # ---------------- ПАНЕЛЬ РЕЗУЛЬТАТА ----------------
@@ -952,6 +1394,7 @@ class result_panel(CastomPanel):
         label_dict = {"X_0": "Н", "Y_0": "H", "Y_C": "H"}
 
         for key in label_dict:
+            # Создаем панель ответа
             value_ans = answer_panel(label_dict[key], key)
             self.values[key] = value_ans
             values_layout.addWidget(value_ans)
@@ -977,8 +1420,9 @@ class result_panel(CastomPanel):
             enlarge_on_hover=True,
         )
 
+        # ИЗМЕНЕНИЕ: Кнопка теперь называется "ПРОВЕРИТЬ" и вызывает новую функцию
         self.check_btn = QPushButton("ПРОВЕРИТЬ ОТВЕТ")
-        self.check_btn.clicked.connect(self.calculate_physics)
+        self.check_btn.clicked.connect(self.check_user_answer)
         self.check_btn.setObjectName("mainButton")
         generate_adaptive_qss(
             self.check_btn,
@@ -1005,42 +1449,86 @@ class result_panel(CastomPanel):
 
     # --- МЕТОД СБРОСА ---
     def clear_results(self):
-        self.set_value_ans("X_0", 0.0)
-        self.set_value_ans("Y_0", 0.0)
-        self.set_value_ans("Y_C", 0.0)
+        self.set_value_ans("X_0", "")
+        self.set_value_ans("Y_0", "")
+        self.set_value_ans("Y_C", "")
 
-    # --- МЕТОД РАСЧЕТА ---
-    def calculate_physics(self):
+    def check_user_answer(self):
         try:
+            # 1. Получаем входные данные
             weight = float(self.input_panel.get_value("P_пл"))
             force_p = float(self.input_panel.get_value("P"))
             side_oa = float(self.input_panel.get_value("OA"))
             side_ab = float(self.input_panel.get_value("AB"))
             side_oc = float(self.input_panel.get_value("OC"))
 
+            # 2. Рассчитываем правильные ответы (Эталон)
             hypotenuse_ob = (side_oa**2 + side_ab**2) ** 0.5
-            res_x0 = -force_p * (side_ab / hypotenuse_ob)
-            res_yc = (2 * side_oa * weight + 3 * (hypotenuse_ob / 2) * force_p) / (
+
+            # Формулы из вашего кода
+            correct_x0 = -force_p * (side_ab / hypotenuse_ob)
+            correct_yc = (2 * side_oa * weight + 3 * (hypotenuse_ob / 2) * force_p) / (
                 3 * side_oc
             )
-            res_y0 = force_p * (side_oa / hypotenuse_ob) + weight - res_yc
+            correct_y0 = force_p * (side_oa / hypotenuse_ob) + weight - correct_yc
 
-            self.set_value_ans("X_0", round(res_x0, 2))
-            self.set_value_ans("Y_C", round(res_yc, 2))
-            self.set_value_ans("Y_0", round(res_y0, 2))
+            # 3. Получаем ответы пользователя
+            user_x0 = self.values["X_0"].get_value_ans()
+            user_y0 = self.values["Y_0"].get_value_ans()
+            user_yc = self.values["Y_C"].get_value_ans()
+
+            if any(v is None for v in [user_x0, user_y0, user_yc]):
+                dlg = WhiteMessageBox(
+                    self, "Внимание", "Заполните все поля ответов!", "warning"
+                )
+                dlg.exec()
+                return
+
+            # 4. Сравниваем с погрешностью (epsilon = 0.1)
+            epsilon = 0.1
+            is_x_correct = abs(user_x0 - correct_x0) < epsilon
+            is_y0_correct = abs(user_y0 - correct_y0) < epsilon
+            is_yc_correct = abs(user_yc - correct_yc) < epsilon
+
+            if is_x_correct and is_y0_correct and is_yc_correct:
+                dlg = WhiteMessageBox(
+                    self,
+                    "Результат",
+                    "ВЕРНО! Все реакции найдены правильно."
+                )
+                dlg.exec()
+            else:
+                errors = []
+                if not is_x_correct:
+                    errors.append("X_0")
+                if not is_y0_correct:
+                    errors.append("Y_0")
+                if not is_yc_correct:
+                    errors.append("Y_C")
+
+                msg = f"НЕВЕРНО.\nОшибки в параметрах: {', '.join(errors)}\n\nПопробуйте пересчитать."
+
+                # Формируем строку с правильными значениями
+                correct_values = []
+                if "X_0" in errors:
+                    correct_values.append(f"X₀ = {correct_x0:.2f}")
+                if "Y_0" in errors:
+                    correct_values.append(f"Y₀ = {correct_y0:.2f}")
+                if "Y_C" in errors:
+                    correct_values.append(f"Yc = {correct_yc:.2f}")
+
+                answer_text = " | ".join(correct_values) if correct_values else ""
+
+                dlg = WhiteMessageBox(self, "Результат", msg, correct_answer=answer_text)
+                dlg.exec()
 
         except Exception as e:
-            show_error_message(self, "Ошибка", f"Произошла ошибка: {str(e)}")
+            dlg = WhiteMessageBox(
+                self, "Ошибка", f"Произошла ошибка: {str(e)}"
+            )
+            dlg.exec()
 
-    def get_value_ans(self, key):
-        try:
-            return float(self.sliders[key].input.text())
-        except:
-            return 0.0
-
-    def set_value_ans(self, key, value):
-        if key in self.values:
-            self.values[key].input.setText(str(value))
+    # Метод style_message_box больше не нужен, можете его удалить
 
 
 # ---------------- ОСНОВНОЙ ЭКРАН ----------------
@@ -1072,7 +1560,6 @@ class SolverPage(QWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        
         self.corner = CornerWidget(
             top_right_text="РЕШЕНИЕ ЗАДАЧИ",
             show_bottom=False,
@@ -1086,11 +1573,9 @@ class SolverPage(QWidget):
 
         # Лейаут всего внутри overlay
         all_layout = QHBoxLayout(self.all_overlay)
-        #all_layout.setAlignment(Qt.AlignCenter)
-        all_layout.setContentsMargins(20*scale, 70*scale, 20*scale, 15*scale)
-        all_layout.setSpacing(20*scale)
-
-
+        # all_layout.setAlignment(Qt.AlignCenter)
+        all_layout.setContentsMargins(20 * scale, 70 * scale, 20 * scale, 15 * scale)
+        all_layout.setSpacing(20 * scale)
 
         # 1. Создаем главный вертикальный лейаут для всего содержимого
         main_content_layout = QVBoxLayout(self.all_overlay)
@@ -1128,8 +1613,6 @@ class SolverPage(QWidget):
         }}
         """
         self.task_label.setStyleSheet(task_style)
-
-        
 
         # 3. Создаем горизонтальный контейнер для панелей и графика (чтобы они были рядом)
         panels_layout = QHBoxLayout()
@@ -1176,7 +1659,6 @@ class SolverPage(QWidget):
         self.graph = GraphWidget()
         self.graph.setMinimumHeight(250 * scale)
         right_layout_inner.addWidget(self.graph)
-
 
         # Кнопки
         btns_layout = QVBoxLayout()
@@ -1252,7 +1734,22 @@ class SolverPage(QWidget):
         self.overlay.raise_()
 
     def show_hint(self):
-        dialog = HintDialog()
+        # Текст подсказки
+        hint_content = (
+            "<b>1. Геометрия треугольника:</b><br>"
+            "- Найди гипотенузу OB: √(OA² + AB²).<br>"
+            "- Центр тяжести (ЦТ) однородного треугольника находится на расстоянии 1/3 от катетов.<br>"
+            "- Плечо силы P относительно точки O равно половине гипотенузы (так как сила приложена в середине и перпендикулярна ей? Уточни условие OD=BD).<br><br>"
+            "<b>2. Механика (Статика):</b><br>"
+            "- <b>Шарнир O:</b> дает две реакции X₀ и Y₀.<br>"
+            "- <b>Гладкая опора C:</b> дает реакцию Yc, направленную перпендикулярно поверхности (вверх).<br>"
+            "- Составь 3 уравнения равновесия:<br>"
+            "  1. ΣFx = 0 (проекция на ось X)<br>"
+            "  2. ΣFy = 0 (проекция на ось Y)<br>"
+            "  3. ΣMo = 0 (сумма моментов относительно точки O). Это самое важное уравнение, так как оно позволяет найти Yc, не зная реакций в шарнире."
+        )
+
+        dialog = HintDialog(hint_content)
         dialog.exec()
 
     def resizeEvent(self, event):
@@ -1263,11 +1760,11 @@ class SolverPage(QWidget):
         """Проверяет корректность введённых значений"""
         try:
             side_oc = float(self.input_panel.get_value("OC"))
-            side_ab = float(self.input_panel.get_value("AB"))
+            side_oa = float(self.input_panel.get_value("OA"))  # Берем OA вместо AB
 
-            # Правило: OC должно быть меньше AB
-            if side_oc >= side_ab:
-                return False, "СТОРОНА OC ДОЛЖНА БЫТЬ МЕНЬШЕ СТОРОНЫ AB"
+            # Правило: OC должно быть меньше OA
+            if side_oc >= side_oa:
+                return False, "СТОРОНА OC ДОЛЖНА БЫТЬ МЕНЬШЕ СТОРОНЫ OA"
 
             return True, ""
         except Exception as e:
@@ -1304,6 +1801,35 @@ class App(QMainWindow):
 
 
 STYLE = """
+/* === ИСПРАВЛЕНИЕ ЧЕРНЫХ ОКОН === */
+QMessageBox {
+    background-color: #ffffff;  /* Белый фон */
+    color: #000000;             /* Черный текст */
+}
+
+QMessageBox QLabel {
+    color: #000000;             /* Текст сообщения черный */
+    background-color: transparent;
+}
+
+QMessageBox QPushButton {
+    background-color: #111111;  /* Кнопки черные (как у вас в дизайне) */
+    color: white;               /* Текст на кнопках белый */
+    border: 1px solid #333;
+    padding: 5px 15px;
+    border-radius: 4px;
+}
+
+QMessageBox QPushButton:hover {
+    background-color: #333333;  /* При наведении чуть светлее */
+}
+/* ============================= */
+
+QMainWindow {
+    border-image: url("ProjUITest/Assets/bg.png") 0 0 0 0 stretch stretch; 
+}
+
+
 QMainWindow {
     border-image: url("ProjUITest/Assets/bg.png") 0 0 0 0 stretch stretch; 
 }
